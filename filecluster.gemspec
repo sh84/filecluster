@@ -4,8 +4,8 @@ require File.expand_path('../lib/fc/version', __FILE__)
 Gem::Specification.new do |gem|
   gem.authors       = ["sh"]
   gem.email         = ["cntyrf@gmail.com"]
-  gem.description   = %q{Distributed sorage}
-  gem.summary       = %q{Distributed sorage}
+  gem.description   = %q{Distributed storage}
+  gem.summary       = %q{Distributed storage}
   gem.homepage      = ""
 
   gem.files         = `git ls-files`.split($\)
@@ -17,6 +17,6 @@ Gem::Specification.new do |gem|
   
   gem.add_development_dependency "rake"
   gem.add_development_dependency "mysql2"
-  gem.add_development_dependency "shoulda"
+  gem.add_development_dependency "shoulda-context"
   gem.add_development_dependency "mocha"
 end
