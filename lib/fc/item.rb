@@ -2,7 +2,7 @@
 
 module FC
   class Item < DbBase
-    set_table :items, 'id, name, tag, outer_id, policy_id, dir, size, status, time, copies'
+    set_table :items, 'name, tag, outer_id, policy_id, dir, size, status, time, copies'
     
     def initialize(params = {})
       super(params)

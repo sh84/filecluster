@@ -5,9 +5,9 @@ module FC
     attr_accessor :id
     
     def initialize(params = {})
-      params.each{|key, val| self.send("#{key}=", val)}
-      @id = @id.to_i if @id
-      @database_fields = {} unless @database_fields
+      @@table_fields.each {|key| self.send("#{key}=", params[key] || params[key.to_sym]) }
+      @id = (params["id"] || params[:id]).to_i if params["id"] || params[:id]
+      @database_fields = params[:database_fields] || {}
     end
     
     def self.set_table(name, fields)
@@ -21,7 +21,8 @@ module FC
       r = FC::DB.connect.query("SELECT * FROM #{@@table_name} WHERE id=#{id.to_i}")
       raise "Record not found (#{@@table_name}.id=#{id})" if r.count == 0
       # сохраняем только объявленные поля
-      self.new(@database_fields = r.first.select{|key, val| key == "id" || @@table_fields[key]})
+      database_fields = r.first.select{|key, val| @@table_fields.include?(key.to_s)}
+      self.new(database_fields.merge({:id => id, :database_fields => database_fields}))
     end
     
     # сохранить изменения в базу
@@ -29,14 +30,15 @@ module FC
       sql = @id ? "UPDATE #{@@table_name} SET " : "INSERT IGNORE INTO #{@@table_name} SET "
       fields = []
       @@table_fields.each do |key|
-        val = @database_fields[key]
-        if self.send(key).to_s != val.to_s || self.send(key).nil? && !val.nil? || !self.send(key).nil? && val.nil?
-          fields << "#{key}=#{val ? (nil.class == String ? connect.escape(val) : val) : 'NULL'} "
+        db_val = @database_fields[key]
+        val = self.send(key)
+        if val.to_s != db_val.to_s || val.nil? && !db_val.nil? || !val.nil? && db_val.nil?
+          fields << "#{key}=#{val ? (val.class == String ? "'#{FC::DB.connect.escape(val)}'" : val.to_i) : 'NULL'}"
         end
       end
       if fields.length > 0
         sql << fields.join(',')
-        sql << "WHERE id=#{@id.to_i}" if @id
+        sql << " WHERE id=#{@id.to_i}" if @id
         FC::DB.connect.query(sql)
         @id = FC::DB.connect.last_id unless @id
         @@table_fields.each do |key|
@@ -47,7 +49,7 @@ module FC
 
     # удалить элемент из базы
     def delete
-      FC::DB.connect.query("DELETE FROM #{@@table_name} WHERE id=#{@id.to_i}")
+      FC::DB.connect.query("DELETE FROM #{@@table_name} WHERE id=#{@id.to_i}") if @id
     end
   end
 end

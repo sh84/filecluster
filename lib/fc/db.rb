@@ -14,7 +14,7 @@ module FC
       FC::DB.connect.query(%{
         CREATE TABLE #{@prefix}items (
           id int NOT NULL AUTO_INCREMENT,
-          name varchar(255) NOT NULL DEFAULT '',
+          name varchar(1024) NOT NULL DEFAULT '',
           tag varchar(255) DEFAULT NULL,
           outer_id int DEFAULT NULL,
           policy_id int NOT NULL,
