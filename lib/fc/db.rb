@@ -34,13 +34,14 @@ module FC
       
       FC::DB.connect.query(%{
         CREATE TABLE #{@prefix}storages (
+          id int NOT NULL AUTO_INCREMENT,
           name varchar(255) NOT NULL DEFAULT '',
           host varchar(255) NOT NULL DEFAULT '',
           path text NOT NULL DEFAULT '',
           url text NOT NULL DEFAULT '',
           size bigint NOT NULL DEFAULT 0,
           size_limit int NOT NULL DEFAULT 0,
-          PRIMARY KEY (name), KEY (host)
+          PRIMARY KEY (id), UNIQUE KEY (name), KEY (host)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
       })
       proc = %{

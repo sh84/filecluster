@@ -1,8 +1,8 @@
 require 'helper'
 
-class ItemTest < Test::Unit::TestCase
+class DbTest < Test::Unit::TestCase
   def setup
-    @item = FC::Item.new()
+    @item = FC::Item.new(:id => 12, :name => 'rrr')
   end
   context 'ggg' do
     should "test" do
