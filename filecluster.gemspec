@@ -15,6 +15,7 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
   gem.version       = FC::VERSION
   
+  gem.add_development_dependency "test-unit"
   gem.add_development_dependency "rake"
   gem.add_development_dependency "mysql2"
   gem.add_development_dependency "shoulda-context"

@@ -2,7 +2,6 @@ $:.unshift File.expand_path('../lib', File.dirname(__FILE__))
 
 require "test/unit"
 require "shoulda-context"
-require "mocha/setup"
 require "filecluster"
 
 TEST_DATABASE = 'fc_test'

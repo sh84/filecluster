@@ -1,5 +1,9 @@
 require 'helper'
 
+Test::Unit.at_exit do
+  FC::DB.connect.query("DELETE FROM items")
+end
+
 class BaseTest < Test::Unit::TestCase
   def setup
     @item = FC::Item.new(:name => 'test1', :tag => 'test tag', :dir => 0, :size => 100, :blabla => 'blabla')
@@ -22,13 +26,13 @@ class BaseTest < Test::Unit::TestCase
   end
   
   should "correct update and load item" do
-    assert_raise(RuntimeError) { FC::Item.load(12454845) }
+    assert_raise(RuntimeError) { FC::Item.find(12454845) }
     @item.save
     @item.copies = 1
     @item.save
     @item.outer_id = 111
     @item.save
-    loaded_item = FC::Item.load(@item.id)
+    loaded_item = FC::Item.find(@item.id)
     assert_kind_of FC::Item, loaded_item, 'Load not FC::Item'
     assert_equal @item.name, loaded_item.name, 'saved item name <> loaded item name'
     assert_equal @item.tag, loaded_item.tag, 'saved item tag <> loaded item tag'
@@ -41,6 +45,6 @@ class BaseTest < Test::Unit::TestCase
   
   should "correct delete item" do
     assert_nothing_raised { @item.delete }
-    assert_raise(RuntimeError) { FC::Item.load(@item.id) }
+    assert_raise(RuntimeError) { FC::Item.find(@item.id) }
   end
 end

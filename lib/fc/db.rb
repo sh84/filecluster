@@ -46,9 +46,9 @@ module FC
       })
       proc = %{
         # update policy.storages on storage delete and update
-        UPDATE #{@prefix}policy, 
-          (SELECT #{@prefix}policy.id, GROUP_CONCAT(name) as storages FROM #{@prefix}policy, #{@prefix}storages WHERE FIND_IN_SET(name, storages)) as new_policy 
-        SET #{@prefix}policy.storages = new_policy.storages WHERE #{@prefix}policy.id = new_policy.id;
+        UPDATE #{@prefix}policies, 
+          (SELECT #{@prefix}policies.id, GROUP_CONCAT(name) as storages FROM #{@prefix}policies, #{@prefix}storages WHERE FIND_IN_SET(name, storages)) as new_policy 
+        SET #{@prefix}policies.storages = new_policy.storages WHERE #{@prefix}policies.id = new_policy.id;
       }
       FC::DB.connect.query("CREATE TRIGGER fc_storages_after_delete AFTER DELETE on #{@prefix}storages FOR EACH ROW BEGIN #{proc} END")
       FC::DB.connect.query("CREATE TRIGGER fc_storages_after_update AFTER UPDATE on #{@prefix}storages FOR EACH ROW BEGIN #{proc} END")
@@ -98,7 +98,7 @@ module FC
       FC::DB.connect.query("CREATE TRIGGER fc_items_storages_after_delete AFTER DELETE on #{@prefix}items_storages FOR EACH ROW BEGIN #{proc_del} END")
       
       FC::DB.connect.query(%{
-        CREATE TABLE #{@prefix}policy (
+        CREATE TABLE #{@prefix}policies (
           id int NOT NULL AUTO_INCREMENT,
           storages text NOT NULL DEFAULT '',
           copies int NOT NULL DEFAULT 0,
@@ -110,8 +110,8 @@ module FC
         SELECT GROUP_CONCAT(name) INTO @storages_list FROM #{@prefix}storages WHERE FIND_IN_SET(name, NEW.storages);
         SET NEW.storages = @storages_list;
       }
-      FC::DB.connect.query("CREATE TRIGGER fc_policy_before_insert BEFORE INSERT on #{@prefix}policy FOR EACH ROW BEGIN #{proc} END")
-      FC::DB.connect.query("CREATE TRIGGER fc_policy_before_update BEFORE UPDATE on #{@prefix}policy FOR EACH ROW BEGIN #{proc} END")
+      FC::DB.connect.query("CREATE TRIGGER fc_policies_before_insert BEFORE INSERT on #{@prefix}policies FOR EACH ROW BEGIN #{proc} END")
+      FC::DB.connect.query("CREATE TRIGGER fc_policies_before_update BEFORE UPDATE on #{@prefix}policies FOR EACH ROW BEGIN #{proc} END")
     end
   end
 end
