@@ -2,7 +2,7 @@
 
 module FC
   class DbBase
-    attr_accessor :id
+    attr_accessor :id, :database_fields
     
     class << self
       attr_accessor :table_name, :table_fields
@@ -49,6 +49,14 @@ module FC
           @database_fields[key] = self.send(key)
         end
       end
+    end
+    
+    # перезагрузить из базы
+    def reload
+      raise "Can't reload object without id" if !@id || @id.to_i == 0
+      new_obj = self.class.find(@id)
+      self.database_fields = new_obj.database_fields
+      self.class.table_fields.each {|key| self.send("#{key}=", new_obj.send(key)) }
     end
 
     # удалить элемент из базы

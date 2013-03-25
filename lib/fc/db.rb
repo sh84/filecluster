@@ -20,7 +20,7 @@ module FC
           policy_id int NOT NULL,
           dir tinyint(1) NOT NULL DEFAULT 0,
           size bigint NOT NULL DEFAULT 0,
-          status ENUM('new', 'ready', 'error') NOT NULL DEFAULT 'new',
+          status ENUM('new', 'ready', 'error', 'delete') NOT NULL DEFAULT 'new',
           time int DEFAULT NULL,
           copies int NOT NULL DEFAULT 0,
           PRIMARY KEY (id), KEY (name), KEY (outer_id), KEY (time, status), KEY (status)
@@ -47,11 +47,27 @@ module FC
       proc = %{
         # update policy.storages on storage delete and update
         UPDATE #{@prefix}policies, 
-          (SELECT #{@prefix}policies.id, GROUP_CONCAT(name) as storages FROM #{@prefix}policies, #{@prefix}storages WHERE FIND_IN_SET(name, storages)) as new_policy 
+          (SELECT #{@prefix}policies.id, GROUP_CONCAT(name) as storages FROM #{@prefix}policies LEFT JOIN #{@prefix}storages ON FIND_IN_SET(name, storages) GROUP BY #{@prefix}policies.id) as new_policy
         SET #{@prefix}policies.storages = new_policy.storages WHERE #{@prefix}policies.id = new_policy.id;
       }
       FC::DB.connect.query("CREATE TRIGGER fc_storages_after_delete AFTER DELETE on #{@prefix}storages FOR EACH ROW BEGIN #{proc} END")
       FC::DB.connect.query("CREATE TRIGGER fc_storages_after_update AFTER UPDATE on #{@prefix}storages FOR EACH ROW BEGIN #{proc} END")
+      
+      FC::DB.connect.query(%{
+        CREATE TABLE #{@prefix}policies (
+          id int NOT NULL AUTO_INCREMENT,
+          storages text NOT NULL DEFAULT '',
+          copies int NOT NULL DEFAULT 0,
+          PRIMARY KEY (id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+      })
+      proc = %{
+        # update policy.storages on policy change - guarantee valid policy.storages
+        SELECT GROUP_CONCAT(name) INTO @storages_list FROM #{@prefix}storages WHERE FIND_IN_SET(name, NEW.storages);
+        SET NEW.storages = @storages_list;
+      }
+      FC::DB.connect.query("CREATE TRIGGER fc_policies_before_insert BEFORE INSERT on #{@prefix}policies FOR EACH ROW BEGIN #{proc} END")
+      FC::DB.connect.query("CREATE TRIGGER fc_policies_before_update BEFORE UPDATE on #{@prefix}policies FOR EACH ROW BEGIN #{proc} END")
       
       FC::DB.connect.query(%{
         CREATE TABLE #{@prefix}items_storages (
@@ -67,15 +83,14 @@ module FC
       })
       proc = %{
         SELECT status, copies, size INTO @item_status, @item_copies, @item_size FROM #{@prefix}items WHERE id = NEW.item_id;
-        SET @fcurr_copies = (SELECT count(*) FROM #{@prefix}items_storages WHERE item_id = NEW.item_id AND status <> 'delete');
-        SET @curr_copies_not_err = (SELECT count(*) FROM #{@prefix}items_storages WHERE item_id = NEW.item_id AND status <> 'error');
+        SET @curr_copies = (SELECT count(*) FROM #{@prefix}items_storages WHERE item_id = NEW.item_id AND status <> 'delete');
         SET @curr_copies_ready = (SELECT count(*) FROM #{@prefix}items_storages WHERE item_id = NEW.item_id AND status = 'ready');
         # calc item.copies
         IF @curr_copies <> @item_copies THEN 
-          UPDATE #{@prefix}items SET copies=@fc_curr_copies WHERE id = NEW.item_id;
+          UPDATE #{@prefix}items SET copies=@curr_copies WHERE id = NEW.item_id;
         END IF;
         # check error status
-        IF @curr_copies_not_err = 0 THEN 
+        IF @item_status <> 'new' AND @item_status <> 'delete' AND @curr_copies_ready = 0 THEN 
           UPDATE #{@prefix}items SET status='error' WHERE id = NEW.item_id;
         END IF;
         # check ready status
@@ -96,22 +111,6 @@ module FC
       FC::DB.connect.query("CREATE TRIGGER fc_items_storages_after_update AFTER UPDATE on #{@prefix}items_storages FOR EACH ROW BEGIN #{proc} END")
       FC::DB.connect.query("CREATE TRIGGER fc_items_storages_after_insert AFTER INSERT on #{@prefix}items_storages FOR EACH ROW BEGIN #{proc_add} END")
       FC::DB.connect.query("CREATE TRIGGER fc_items_storages_after_delete AFTER DELETE on #{@prefix}items_storages FOR EACH ROW BEGIN #{proc_del} END")
-      
-      FC::DB.connect.query(%{
-        CREATE TABLE #{@prefix}policies (
-          id int NOT NULL AUTO_INCREMENT,
-          storages text NOT NULL DEFAULT '',
-          copies int NOT NULL DEFAULT 0,
-          PRIMARY KEY (id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
-      })
-      proc = %{
-        # update policy.storages on policy change - guarantee valid policy.storages
-        SELECT GROUP_CONCAT(name) INTO @storages_list FROM #{@prefix}storages WHERE FIND_IN_SET(name, NEW.storages);
-        SET NEW.storages = @storages_list;
-      }
-      FC::DB.connect.query("CREATE TRIGGER fc_policies_before_insert BEFORE INSERT on #{@prefix}policies FOR EACH ROW BEGIN #{proc} END")
-      FC::DB.connect.query("CREATE TRIGGER fc_policies_before_update BEFORE UPDATE on #{@prefix}policies FOR EACH ROW BEGIN #{proc} END")
     end
   end
 end
