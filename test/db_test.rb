@@ -63,6 +63,11 @@ class DbTest < Test::Unit::TestCase
     assert_not_equal time, @item.time, "Item (id=#{@item.id}) time not changed after save"
   end
   
+  should "where" do
+    items = FC::Item.where("id IN (#{$items_ids.join(',')})")
+    assert_same_elements items.map(&:id), @items.map(&:id), "Items by where load <> items by find"
+  end
+  
   should "storages" do
     assert @storages.count > 0, 'Storages not loaded'
     storage = FC::Storage.new(:name => 'rec1-sda', :host => 'rec1')

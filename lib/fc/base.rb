@@ -20,13 +20,23 @@ module FC
       self.table_fields.each{|e| attr_accessor e.to_sym}
     end
     
-    # получить элемент из базы
+    def self.create_from_fiels(data)
+      # сохраняем только объявленные поля
+      database_fields = data.select{|key, val| self.table_fields.include?(key.to_s)}
+      self.new(database_fields.merge({:id => data["id"].to_s, :database_fields => database_fields}))
+    end
+    
+    # получить элемент из базы по id
     def self.find(id)
       r = FC::DB.connect.query("SELECT * FROM #{self.table_name} WHERE id=#{id.to_i}")
       raise "Record not found (#{self.table_name}.id=#{id})" if r.count == 0
-      # сохраняем только объявленные поля
-      database_fields = r.first.select{|key, val| self.table_fields.include?(key.to_s)}
-      self.new(database_fields.merge({:id => id, :database_fields => database_fields}))
+      self.create_from_fiels(r.first)
+    end
+    
+    # получить элементы из базы по sql условию
+    def self.where(cond = "1")
+      r = FC::DB.connect.query("SELECT * FROM #{self.table_name} WHERE #{cond}")
+      r.map{|data| self.create_from_fiels(data)}
     end
     
     # сохранить изменения в базу

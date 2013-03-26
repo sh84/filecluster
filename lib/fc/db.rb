@@ -41,6 +41,7 @@ module FC
           url text NOT NULL DEFAULT '',
           size bigint NOT NULL DEFAULT 0,
           size_limit int NOT NULL DEFAULT 0,
+          check_time int DEFAULT NULL,
           PRIMARY KEY (id), UNIQUE KEY (name), KEY (host)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
       })

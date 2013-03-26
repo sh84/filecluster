@@ -1,3 +1,4 @@
+require "date"
 require "fc/version"
 require "fc/db"
 require "fc/base"
