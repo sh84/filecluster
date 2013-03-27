@@ -1,10 +1,12 @@
 require 'helper'
 
-Test::Unit.at_exit do
-  #FC::DB.connect.query("DELETE FROM items")
-end
-
 class BaseTest < Test::Unit::TestCase
+  class << self
+    def shutdown
+      FC::DB.connect.query("DELETE FROM items")
+    end
+  end
+  
   def setup
     @item = FC::Item.new(:name => 'test1', :tag => 'test tag', :dir => 0, :size => 100, :blabla => 'blabla')
   end

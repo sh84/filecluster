@@ -41,7 +41,7 @@ module FC
     
     # сохранить изменения в базу
     def save
-      sql = @id ? "UPDATE #{self.class.table_name} SET " : "INSERT IGNORE INTO #{self.class.table_name} SET "
+      sql = @id.to_i != 0 ? "UPDATE #{self.class.table_name} SET " : "INSERT IGNORE INTO #{self.class.table_name} SET "
       fields = []
       self.class.table_fields.each do |key|
         db_val = @database_fields[key]
@@ -73,5 +73,6 @@ module FC
     def delete
       FC::DB.connect.query("DELETE FROM #{self.class.table_name} WHERE id=#{@id.to_i}") if @id
     end
+    
   end
 end

@@ -5,7 +5,7 @@ module FC
     set_table :policies, 'storages, copies'
     
     def get_storages
-      FC:Storage.where("name IN (#{self.storages})")
+      FC::Storage.where("name IN (#{storages.split(',').map{|s| "'#{s}'"}.join(',')})")
     end
     
     # получить подходящий storage согласно policy для объекта размером size

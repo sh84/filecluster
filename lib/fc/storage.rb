@@ -13,19 +13,30 @@ module FC
       @uname || @uname = `uname -n`
     end
     
+    def initialize(params = {})
+      path = (params['path'] || params[:path])
+      if path && !path.to_s.empty?
+        raise "Storage path must be like '/bla/bla../'" unless path.match(/^\/.*\/$/)
+      end
+      super params
+    end
+    
     def update_check_time
-      self.check_time = Time.new.to_i
-      self.save
+      check_time = Time.new.to_i
+      save
     end
     
     def up?
-      Time.new.to_i - self.check_time <= self.class.check_time_limit
+      Time.new.to_i - check_time <= self.class.check_time_limit
     end
     
     # копирование локального пути на машину storage
-    def copy_path(local_path, name)
-      r = `scp -r TODO koo:/jhome/vhosts/filecluster/ 2>&1`
-      raice r if $?.exitstatus != 0
+    def copy_path(local_path, file_name)
+      cmd = self.class.curr_host == host ? 
+        "cp -r #{local_path} #{self.path}#{file_name}" : 
+        "scp -rB #{local_path} #{self.host}:#{self.path}#{file_name}"
+      r = `#{cmd} 2>&1`
+      raise r if $?.exitstatus != 0
     end
   end
 end

@@ -77,7 +77,7 @@ module FC
           storage_name varchar(255) DEFAULT NULL,
           status ENUM('new', 'copy', 'error', 'ready', 'delete') NOT NULL DEFAULT 'new',
           time int DEFAULT NULL,
-          PRIMARY KEY (id), KEY (item_id), KEY (storage_name), KEY (time, status), KEY (status),
+          PRIMARY KEY (id), UNIQUE KEY (item_id, storage_name), KEY (storage_name), KEY (time, status), KEY (status),
           FOREIGN KEY (item_id) REFERENCES #{@prefix}items(id) ON UPDATE RESTRICT ON DELETE RESTRICT,
           FOREIGN KEY (storage_name) REFERENCES #{@prefix}storages(name) ON UPDATE RESTRICT ON DELETE RESTRICT
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci

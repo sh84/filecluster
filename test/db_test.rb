@@ -1,53 +1,53 @@
 require 'helper'
 
-Test::Unit.at_start do
-  storages = []
-  storages << FC::Storage.new(:name => 'rec1-sda', :host => 'rec1')
-  storages << FC::Storage.new(:name => 'rec1-sdb', :host => 'rec1')
-  storages << FC::Storage.new(:name => 'rec1-sdc', :host => 'rec1')
-  storages << FC::Storage.new(:name => 'rec1-sdd', :host => 'rec1')
-  storages << FC::Storage.new(:name => 'rec2-sda', :host => 'rec2')
-  storages << FC::Storage.new(:name => 'rec2-sdb', :host => 'rec2')
-  storages << FC::Storage.new(:name => 'rec2-sdc', :host => 'rec2')
-  storages << FC::Storage.new(:name => 'rec2-sdd', :host => 'rec2')
-  $storages_ids = storages.map{|storage| storage.save; storage.id }
-  
-  policies = []
-  policies << FC::Policy.new(:storages => 'rec1-sda,rec1-sdd', :copies => 2)
-  policies << FC::Policy.new(:storages => 'rec1-sda,bla,rec2-sdd', :copies => 3)
-  policies << FC::Policy.new(:storages => 'bla,rec1-sda,test', :copies => 4)
-  $policies_ids = policies.map{|policy| policy.save; policy.id }
-  
-  items = []
-  items << FC::Item.new(:name => 'test1', :policy_id => policies.first.id, :size => 150)
-  items << FC::Item.new(:name => 'test2', :policy_id => policies.first.id, :size => 200)
-  items << FC::Item.new(:name => 'test3', :policy_id => policies.first.id, :size => 400)
-  $items_ids = items.map{|item| item.save; item.id }
-  
-  item_stotages = []
-  items.each do |item|
-    item_stotages << FC::ItemStorage.new(:item_id => item.id, :storage_name => 'rec1-sda')
-    item_stotages << FC::ItemStorage.new(:item_id => item.id, :storage_name => 'rec2-sda')
-  end
-  $item_stotages_ids = item_stotages.map{|is| is.save; is.id }
-end
-
-Test::Unit.at_exit do
-  #FC::DB.connect.query("DELETE FROM storages")
-  #FC::DB.connect.query("DELETE FROM policies")
-  #FC::DB.connect.query("DELETE FROM items")
-  #FC::DB.connect.query("DELETE FROM item_stotages")
-end
-
 class DbTest < Test::Unit::TestCase
+  class << self
+    def startup
+      storages = []
+      storages << FC::Storage.new(:name => 'rec1-sda', :host => 'rec1')
+      storages << FC::Storage.new(:name => 'rec1-sdb', :host => 'rec1')
+      storages << FC::Storage.new(:name => 'rec1-sdc', :host => 'rec1')
+      storages << FC::Storage.new(:name => 'rec1-sdd', :host => 'rec1')
+      storages << FC::Storage.new(:name => 'rec2-sda', :host => 'rec2')
+      storages << FC::Storage.new(:name => 'rec2-sdb', :host => 'rec2')
+      storages << FC::Storage.new(:name => 'rec2-sdc', :host => 'rec2')
+      storages << FC::Storage.new(:name => 'rec2-sdd', :host => 'rec2')
+      @@storages_ids = storages.map{|storage| storage.save; storage.id }
+      
+      policies = []
+      policies << FC::Policy.new(:storages => 'rec1-sda,rec1-sdd', :copies => 2)
+      policies << FC::Policy.new(:storages => 'rec1-sda,bla,rec2-sdd', :copies => 3)
+      policies << FC::Policy.new(:storages => 'bla,rec1-sda,test', :copies => 4)
+      @@policies_ids = policies.map{|policy| policy.save; policy.id }
+      
+      items = []
+      items << FC::Item.new(:name => 'test1', :policy_id => policies.first.id, :size => 150)
+      items << FC::Item.new(:name => 'test2', :policy_id => policies.first.id, :size => 200)
+      items << FC::Item.new(:name => 'test3', :policy_id => policies.first.id, :size => 400)
+      @@items_ids = items.map{|item| item.save; item.id }
+      
+      item_storages = []
+      items.each do |item|
+        item_storages << FC::ItemStorage.new(:item_id => item.id, :storage_name => 'rec1-sda')
+        item_storages << FC::ItemStorage.new(:item_id => item.id, :storage_name => 'rec2-sda')
+      end
+      @@item_storages_ids = item_storages.map{|is| is.save; is.id }
+    end
+    def shutdown
+      FC::DB.connect.query("DELETE FROM items_storages")
+      FC::DB.connect.query("DELETE FROM items")
+      FC::DB.connect.query("DELETE FROM policies")
+      FC::DB.connect.query("DELETE FROM storages")
+    end
+  end
   def setup
-    @storages = $storages_ids.map{|id| FC::Storage.find(id)}
+    @storages = @@storages_ids.map{|id| FC::Storage.find(id)}
     @storage = @storages.first
-    @policies = $policies_ids.map{|id| FC::Policy.find(id)}
+    @policies = @@policies_ids.map{|id| FC::Policy.find(id)}
     @policy = @policies.first
-    @items = $items_ids.map{|id| FC::Item.find(id)}
+    @items = @@items_ids.map{|id| FC::Item.find(id)}
     @item = @items.first
-    @item_storages = $item_stotages_ids.map{|id| FC::ItemStorage.find(id)}
+    @item_storages = @@item_storages_ids.map{|id| FC::ItemStorage.find(id)}
     @item_storage = @item_storages.first
     @item_storage2 = @item_storages[1]
   end
@@ -64,7 +64,7 @@ class DbTest < Test::Unit::TestCase
   end
   
   should "where" do
-    items = FC::Item.where("id IN (#{$items_ids.join(',')})")
+    items = FC::Item.where("id IN (#{@@items_ids.join(',')})")
     assert_same_elements items.map(&:id), @items.map(&:id), "Items by where load <> items by find"
   end
   
@@ -89,7 +89,7 @@ class DbTest < Test::Unit::TestCase
     @policies[0].reload
     assert_equal 'rec1-sda', @policies[0].storages, "Policy (id=#{@policies[0].id}) incorrect storages after storage change"
     @storages[7].delete  #rec2-sdd
-    $storages_ids.delete(@storages[7].id)
+    @@storages_ids.delete(@storages[7].id)
     @policies[1].reload
     assert_equal 'rec1-sda', @policies[1].storages, "Policy (id=#{@policies[1].id}) incorrect storages after storage delete"
     @policies[0].storages = 'rec1-sda,rec2-sda,bla bla'
@@ -97,6 +97,12 @@ class DbTest < Test::Unit::TestCase
     @policies[0].reload
     assert_equal 'rec1-sda,rec2-sda', @policies[0].storages, "Policy (id=#{@policies[0].id}) incorrect storages after change"
     assert_raise(Mysql2::Error, 'Save empty policy storage') { @policies[0].storages = 'blabla'; @policies[0].save }
+  end
+  
+  should "item_storages doubles" do
+    is = FC::ItemStorage.new(:item_id => @item_storage.item_id, :storage_name => @item_storage.storage_name)
+    is.save
+    assert_equal 0, is.id, 'Item_storages successfull insert on uniq key'
   end
   
   should "item_storages times" do
@@ -157,14 +163,14 @@ class DbTest < Test::Unit::TestCase
     @item.reload
     assert_equal 'ready', @item.status, "Item (id=#{@item.id}) status <> 'ready' not changed after delete item_storage"
     @item_storage.delete
-    $item_stotages_ids.delete(@item_storage.id)
+    @@item_storages_ids.delete(@item_storage.id)
     @item.reload
     @storage.reload
     assert_equal 'ready', @item.status, "Item (id=#{@item.id}) status <> 'ready' not changed after delete item_storage"
     size_sum -= @item.size
     assert_equal size_sum, @storage.size, "storage (id=#{@storage.id}) size <> ready not dec after delete item_storage"
     @item_storage2.delete
-    $item_stotages_ids.delete(@item_storage2.id)
+    @@item_storages_ids.delete(@item_storage2.id)
     @item.reload
     assert_equal 'error', @item.status, "Item (id=#{@item.id}) status <> 'error' not changed after delete all item_storage"
   end
