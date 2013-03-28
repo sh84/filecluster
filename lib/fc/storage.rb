@@ -22,12 +22,12 @@ module FC
     end
     
     def update_check_time
-      check_time = Time.new.to_i
+      self.check_time = Time.new.to_i
       save
     end
     
     def up?
-      Time.new.to_i - check_time <= self.class.check_time_limit
+      Time.new.to_i - check_time.to_i <= self.class.check_time_limit
     end
     
     # копирование локального пути на машину storage

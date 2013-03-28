@@ -6,6 +6,7 @@ require "fc/item_storage"
 require "fc/item"
 require "fc/policy"
 require "fc/storage"
+require "fc/error"
 
 module FC
 

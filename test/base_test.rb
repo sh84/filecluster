@@ -8,7 +8,9 @@ class BaseTest < Test::Unit::TestCase
   end
   
   def setup
-    @item = FC::Item.new(:name => 'test1', :tag => 'test tag', :dir => 0, :size => 100, :blabla => 'blabla')
+    @@policy_id ||= 1
+    @item = FC::Item.new(:name => 'test1', :tag => 'test tag', :dir => 0, :size => 100, :blabla => 'blabla', :policy_id => @@policy_id)
+    @@policy_id += 1
   end
   
   should "correct init" do
@@ -26,6 +28,16 @@ class BaseTest < Test::Unit::TestCase
     @item.copies = 2
     @item.save
     assert_equal id, @item.id, 'Changed id after save with changes'
+  end
+  
+  should "correct where" do
+    @item.save
+    ids = [@item.id]
+    item2 = FC::Item.new(:name => 'test2', :tag => 'test tag', :dir => 0, :size => 100, :blabla => 'blabla', :policy_id => 100)
+    item2.save
+    ids << item2.id
+    items = FC::Item.where("id IN (#{ids.join(',')})")
+    assert_same_elements items.map(&:id), ids, "Items by where load <> items by find"
   end
   
   should "correct reload item" do
@@ -53,7 +65,6 @@ class BaseTest < Test::Unit::TestCase
     assert_equal @item.size, loaded_item.size, 'Saved item size <> loaded item size'
     assert_equal @item.copies, loaded_item.copies, 'Saved item copies <> loaded item copies'
     assert_equal @item.outer_id, loaded_item.outer_id, 'Saved item outer_id <> loaded item outer_id'
-    assert_equal 0, loaded_item.policy_id, 'Loaded item policy_id <> 0'
   end
   
   should "correct delete item" do

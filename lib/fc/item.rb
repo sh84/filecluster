@@ -5,6 +5,7 @@ module FC
     set_table :items, 'name, tag, outer_id, policy_id, dir, size, status, time, copies'
     
     # создает item по локальному файлу
+    # TODO проверка curr_host и local_path одному из доступных стораджей -> создание без копирования 
     def self.create_from_local(local_path, item_name, policy, options={})
       raise 'Path not exists' unless File.exists?(local_path)
       raise 'Policy is not FC::Policy' unless policy.instance_of?(FC::Policy)
@@ -16,6 +17,9 @@ module FC
       })
       raise 'Name is empty' if item_params[:name].empty?
       raise 'Zero size path' if item_params[:size] == 0
+      
+      #FC::Item.where('')
+      
       # TODO проверка на уникальность имени
       
       item = FC::Item.new(item_params)
@@ -36,6 +40,7 @@ module FC
         # TODO проверить размер
         item_storage.status = 'ready'
         item_storage.save
+        item.reload
         return item
       end
     end
@@ -43,7 +48,7 @@ module FC
     # помечает items_storages на удаление
     def mark_deleted
       FC::DB.connect.query("UPDATE #{FC::ItemStorage.table_name} SET status='delete' WHERE item_id = #{id}")
-      status = 'delete'
+      self.status = 'delete'
       save
     end
     

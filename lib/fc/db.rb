@@ -23,7 +23,7 @@ module FC
           status ENUM('new', 'ready', 'error', 'delete') NOT NULL DEFAULT 'new',
           time int DEFAULT NULL,
           copies int NOT NULL DEFAULT 0,
-          PRIMARY KEY (id), KEY (name), KEY (outer_id), KEY (time, status), KEY (status)
+          PRIMARY KEY (id), UNIQUE KEY (name(255), policy_id), KEY (outer_id), KEY (time, status), KEY (status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
       })
       proc_time = %{
@@ -112,6 +112,20 @@ module FC
       FC::DB.connect.query("CREATE TRIGGER fc_items_storages_after_update AFTER UPDATE on #{@prefix}items_storages FOR EACH ROW BEGIN #{proc} END")
       FC::DB.connect.query("CREATE TRIGGER fc_items_storages_after_insert AFTER INSERT on #{@prefix}items_storages FOR EACH ROW BEGIN #{proc_add} END")
       FC::DB.connect.query("CREATE TRIGGER fc_items_storages_after_delete AFTER DELETE on #{@prefix}items_storages FOR EACH ROW BEGIN #{proc_del} END")
+      
+      FC::DB.connect.query(%{
+        CREATE TABLE #{@prefix}errors (
+          id int NOT NULL AUTO_INCREMENT,
+          item_id int DEFAULT NULL,
+          item_storage_id int DEFAULT NULL,
+          host varchar(255) DEFAULT NULL,
+          message varchar(255) DEFAULT NULL,
+          time int DEFAULT NULL,
+          PRIMARY KEY (id), KEY (item_id), KEY (item_storage_id), KEY (host), KEY (time)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+      })
+      FC::DB.connect.query("CREATE TRIGGER fc_errors_before_insert BEFORE INSERT on #{@prefix}errors FOR EACH ROW BEGIN #{proc_time} END")
+      
     end
   end
 end

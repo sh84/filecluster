@@ -61,11 +61,9 @@ class DbTest < Test::Unit::TestCase
     @item.save
     @item.reload
     assert_not_equal time, @item.time, "Item (id=#{@item.id}) time not changed after save"
-  end
-  
-  should "where" do
-    items = FC::Item.where("id IN (#{@@items_ids.join(',')})")
-    assert_same_elements items.map(&:id), @items.map(&:id), "Items by where load <> items by find"
+    item2 = FC::Item.new(:name => @item.name, :policy_id => @item.policy_id)
+    item2.save
+    assert_equal 0, item2.id, "Item (id=#{item2.id}) successfull insert on uniq key"
   end
   
   should "storages" do
@@ -166,12 +164,19 @@ class DbTest < Test::Unit::TestCase
     @@item_storages_ids.delete(@item_storage.id)
     @item.reload
     @storage.reload
-    assert_equal 'ready', @item.status, "Item (id=#{@item.id}) status <> 'ready' not changed after delete item_storage"
+    assert_equal 'ready', @item.status, "Item (id=#{@item.id}) status <> 'ready' changed after delete item_storage"
     size_sum -= @item.size
-    assert_equal size_sum, @storage.size, "storage (id=#{@storage.id}) size <> ready not dec after delete item_storage"
+    assert_equal size_sum, @storage.size, "storage (id=#{@storage.id}) size not dec after delete item_storage"
     @item_storage2.delete
     @@item_storages_ids.delete(@item_storage2.id)
     @item.reload
     assert_equal 'error', @item.status, "Item (id=#{@item.id}) status <> 'error' not changed after delete all item_storage"
+  end
+  
+  should "errors time" do
+    error = FC::Error.new(:message => 'test error')
+    error.save
+    error.reload
+    assert error.time > 0, "Error (id=#{error.id}) time = 0"
   end
 end
