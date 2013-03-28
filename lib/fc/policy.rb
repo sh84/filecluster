@@ -8,7 +8,7 @@ module FC
       FC::Storage.where("name IN (#{storages.split(',').map{|s| "'#{s}'"}.join(',')})")
     end
     
-    # получить подходящий storage согласно policy для объекта размером size
+    # get available storage for object by size
     def get_proper_storage(size)
       get_storages.detect do |storage|
         storage.up? && storage.size + size < storage.size_limit

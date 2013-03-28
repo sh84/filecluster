@@ -23,7 +23,7 @@ class FunctionalTest < Test::Unit::TestCase
       @@policies << FC::Policy.new(:storages => 'host1-sdb,host2-sdb', :copies => 2)
       @@policies.each { |policy| policy.save}
     end
-    def shutdown1
+    def shutdown
       FC::DB.connect.query("DELETE FROM items_storages")
       FC::DB.connect.query("DELETE FROM items")
       FC::DB.connect.query("DELETE FROM policies")

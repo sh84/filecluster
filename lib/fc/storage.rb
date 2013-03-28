@@ -7,7 +7,7 @@ module FC
     class << self
       attr_accessor :check_time_limit
     end
-    @check_time_limit = 120
+    @check_time_limit = 120 # ttl for up status check
     
     def self.curr_host
       @uname || @uname = `uname -n`
@@ -30,13 +30,23 @@ module FC
       Time.new.to_i - check_time.to_i <= self.class.check_time_limit
     end
     
-    # копирование локального пути на машину storage
+    # copy local_path to storage
     def copy_path(local_path, file_name)
       cmd = self.class.curr_host == host ? 
         "cp -r #{local_path} #{self.path}#{file_name}" : 
         "scp -rB #{local_path} #{self.host}:#{self.path}#{file_name}"
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
+    end
+    
+    # return object size on storage
+    def file_size(file_name)
+      cmd = self.class.curr_host == host ? 
+        "du -sb #{self.path}#{file_name}" : 
+        "ssh -oBatchMode=yes #{self.host} 'du -sb #{self.path}#{file_name}'"
+      r = `#{cmd} 2>&1`
+      raise r if $?.exitstatus != 0
+      r.to_i
     end
   end
 end

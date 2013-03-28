@@ -22,7 +22,7 @@ class BaseTest < Test::Unit::TestCase
   should "correct add and save item" do
     @item.save
     assert id=@item.id, 'Nil id after save'
-    # проверка на двойное сохранение
+    # double save check
     @item.save
     assert_equal id, @item.id, 'Changed id after double save'
     @item.copies = 2

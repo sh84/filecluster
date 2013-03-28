@@ -14,32 +14,36 @@ module FC
       @database_fields = params[:database_fields] || {}
     end
     
+    # define table name and fields
     def self.set_table(name, fields)
       self.table_name = "#{FC::DB.prefix}#{name}"
       self.table_fields = fields.split(',').map{|e| e.gsub(' ','')}
       self.table_fields.each{|e| attr_accessor e.to_sym}
     end
     
+    # make instance on fields hash
     def self.create_from_fiels(data)
-      # сохраняем только объявленные поля
+      # use only defined in set_table fields
       database_fields = data.select{|key, val| self.table_fields.include?(key.to_s)}
       self.new(database_fields.merge({:id => data["id"].to_s, :database_fields => database_fields}))
     end
     
-    # получить элемент из базы по id
+    # get element by id
     def self.find(id)
       r = FC::DB.connect.query("SELECT * FROM #{self.table_name} WHERE id=#{id.to_i}")
       raise "Record not found (#{self.table_name}.id=#{id})" if r.count == 0
       self.create_from_fiels(r.first)
     end
     
-    # получить элементы из базы по sql условию
-    def self.where(cond = "1")
-      r = FC::DB.connect.query("SELECT * FROM #{self.table_name} WHERE #{cond}")
+    # get elements array by sql condition (possibles '?' placeholders)
+    def self.where(cond = "1", *params)
+      i = -1
+      sql = "SELECT * FROM #{self.table_name} WHERE #{cond.gsub('?'){i+=1; "'#{Mysql2::Client.escape(params[i].to_s)}'"}}"
+      r = FC::DB.connect.query(sql)
       r.map{|data| self.create_from_fiels(data)}
     end
     
-    # сохранить изменения в базу
+    # save changed fields
     def save
       sql = @id.to_i != 0 ? "UPDATE #{self.class.table_name} SET " : "INSERT IGNORE INTO #{self.class.table_name} SET "
       fields = []
@@ -61,7 +65,7 @@ module FC
       end
     end
     
-    # перезагрузить из базы
+    # reload object from DB
     def reload
       raise "Can't reload object without id" if !@id || @id.to_i == 0
       new_obj = self.class.find(@id)
@@ -69,7 +73,7 @@ module FC
       self.class.table_fields.each {|key| self.send("#{key}=", new_obj.send(key)) }
     end
 
-    # удалить элемент из базы
+    # delete object from DB
     def delete
       FC::DB.connect.query("DELETE FROM #{self.class.table_name} WHERE id=#{@id.to_i}") if @id
     end
