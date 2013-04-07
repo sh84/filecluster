@@ -1,0 +1,61 @@
+#!/usr/bin/env ruby
+
+$:.unshift File.expand_path('../lib', File.dirname(__FILE__))
+require 'psych'
+require 'logger'
+require 'optparse'
+require 'filecluster'
+require 'utils'
+require 'daemon'
+
+$storages = []
+$tasks = {}           # tasks by storage name
+$tasks_threads = {}   # threads by storage name
+$check_threads = {}   # threads by storage name
+$exit_signal = false 
+$global_daemon_thread = nil
+
+default_db_config = File.expand_path(File.dirname(__FILE__))+'/db.yml'
+descriptions = {
+  :config      => {:short => 'c',  :full => 'config',     :default => default_db_config, :text => 'path to db.yml file'},
+  :log_level   => {:short => 'l',  :full => 'log_level',  :default => 'info', :text => 'log level (fatal, error, warn, info or debug)'},
+  :cycle_time  => {:short => 't',  :full => 'time',       :default => 30, :text => 'Time between checks database and storages available'},
+  :global_wait => {:short => 'g', :full => 'wait',       :default => 120, :text => 'Time between runs global daemon if it does not running'},
+  :curr_host   => {:short => 'h', :full => 'host',       :default => FC::Storage.curr_host, :text => 'Time between runs global daemon if it does not running'}
+}
+options = option_parser_init(descriptions, "Usage: fc-daemon [options]\nSetup FileCluster database connection options.\nCreate tables if nessary.")
+FC::Storage.instance_variable_set(:@uname, options[:curr_host]) if options[:curr_host] && options[:curr_host] != FC::Storage.curr_host
+
+$log = Logger.new(STDOUT)
+$log.formatter = proc do |severity, datetime, progname, msg|
+  "[#{datetime}] [#{severity}] #{msg}\n"
+end
+$log.level = Logger.const_get(options[:log_level].upcase)
+$log.info('Started')
+
+db_options = Psych.load(File.read(options[:config]))
+FC::DB.connect_by_config(db_options.merge(:reconnect => true, :multi_threads => true))
+$log.info('Connected to database')
+
+def quit_on_quit
+  $log.info('Exit signal')
+  $exit_signal = true
+end
+trap("TERM") {quit_on_quit}
+trap("INT") {quit_on_quit}
+
+while true do
+  if $exit_signal
+    $tasks_threads.each {|t| t.join}
+    $global_daemon_thread.join if $global_daemon_thread
+    $log.info('Exit')
+    exit
+  else
+    run_global_daemon options[:global_wait].to_i
+    update_storages
+    storages_check
+    update_tasks
+    run_tasks
+  end
+  sleep options[:cycle_time].to_i
+end

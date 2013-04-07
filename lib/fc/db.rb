@@ -2,12 +2,33 @@ require 'mysql2'
 
 module FC
   module DB
-    class << self; attr_accessor :connect, :prefix end
+    class << self; attr_accessor :options, :prefix end
     
     def DB.connect_by_config(options)
-      options[:port] = options[:port].to_i if options[:port]
-      @connect = Mysql2::Client.new(options)
+      @options = options.clone
+      @options[:port] = options[:port].to_i if options[:port]
+      @connects = {}
+      @connects[Thread.current.object_id] = Mysql2::Client.new(@options)
       @prefix = options[:prefix].to_s
+    end
+    
+    def self.connect
+      if @options[:multi_threads]
+        @connects[Thread.current.object_id] ||= Mysql2::Client.new(@options)
+      else
+        @connects.first[1]
+      end
+    end
+    
+    def self.close
+      if @options[:multi_threads]
+        if @connects[Thread.current.object_id]
+          @connects[Thread.current.object_id].close
+          @connects.delete(Thread.current.object_id)
+        end
+      else
+        @connects.first[1].close
+      end
     end
     
     def DB.init_db
@@ -125,6 +146,17 @@ module FC
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
       })
       FC::DB.connect.query("CREATE TRIGGER fc_errors_before_insert BEFORE INSERT on #{@prefix}errors FOR EACH ROW BEGIN #{proc_time} END")
+      
+      FC::DB.connect.query(%{
+        CREATE TABLE #{@prefix}vars (
+          name varchar(255) DEFAULT NULL,
+          val varchar(255) DEFAULT NULL,
+          time int DEFAULT NULL,
+          PRIMARY KEY (name)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+      })
+      FC::DB.connect.query("CREATE TRIGGER fc_vars_before_insert BEFORE INSERT on #{@prefix}vars FOR EACH ROW BEGIN #{proc_time} END")
+      FC::DB.connect.query("CREATE TRIGGER fc_vars_before_update BEFORE UPDATE on #{@prefix}vars FOR EACH ROW BEGIN #{proc_time} END")
     end
   end
 end

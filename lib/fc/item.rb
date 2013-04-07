@@ -5,7 +5,7 @@ module FC
     set_table :items, 'name, tag, outer_id, policy_id, dir, size, status, time, copies'
     
     # create item by local path 
-    # TODO проверка curr_host и local_path одному из доступных стораджей -> создание без копирования 
+    # TODO проверка curr_host и local_path одному из доступных стораджей -> создание без копирования (для кусочков)
     def self.create_from_local(local_path, item_name, policy, options={})
       raise 'Path not exists' unless File.exists?(local_path)
       raise 'Policy is not FC::Policy' unless policy.instance_of?(FC::Policy)
@@ -15,6 +15,7 @@ module FC
         :dir => File.directory?(local_path),
         :size => `du -sb #{local_path}`.to_i
       })
+      item_params.delete(:replace)
       raise 'Name is empty' if item_params[:name].empty?
       raise 'Zero size path' if item_params[:size] == 0
       
@@ -34,39 +35,52 @@ module FC
       end
       item.save
       
-      storage = policy.get_proper_storage(item_params[:size])
+      storage = policy.get_proper_storage(item.size)
       FC::Error.raise 'No available storage', :item_id => item.id unless storage
       
+      item_storage = item.make_item_storage(storage)
+      item.copy_item_storage(local_path, storage, item_storage)
+      return item
+    end
+    
+    def make_item_storage(storage, status = 'new')
       # new storage_item?
-      item_storage = FC::ItemStorage.where('item_id=? AND storage_name=?', item.id, storage.name).first
+      item_storage = FC::ItemStorage.where('item_id=? AND storage_name=?', id, storage.name).first
       item_storage.delete if item_storage
-      item_storage = FC::ItemStorage.new({:item_id => item.id, :storage_name => storage.name, :status => 'copy'})
-      item_storage.save
       
-      begin  
-        storage.copy_path(local_path, item_params[:name])
-        size_on_storage = storage.file_size(item_params[:name])
+      item_storage = FC::ItemStorage.new({:item_id => id, :storage_name => storage.name, :status => status})
+      item_storage.save
+      item_storage
+    end
+    
+    def copy_item_storage(src, storage, item_storage)
+      begin
+        if src.instance_of?(FC::Storage)
+          src.copy_to_local(name, "#{storage.path}#{name}")
+        else
+          storage.copy_path(src, name)
+        end
+        size_on_storage = storage.file_size(name)
       rescue Exception => e
         item_storage.status = 'error'
         item_storage.save
-        FC::Error.raise "Copy error: #{e.message}", :item_id => item.id, :item_storage_id => item_storage.id
+        FC::Error.raise "Copy error: #{e.message}", :item_id => id, :item_storage_id => item_storage.id
       else
         begin
           item_storage.reload
         rescue Exception => e
-          FC::Error.raise "After copy error: #{e.message}", :item_id => item.id, :item_storage_id => item_storage.id
+          FC::Error.raise "After copy error: #{e.message}", :item_id => id, :item_storage_id => item_storage.id
+        else
+          if size_on_storage != size
+            item_storage.status = 'error'
+            item_storage.save
+            FC::Error.raise "Check size after copy error", :item_id => id, :item_storage_id => item_storage.id
+          else
+            item_storage.status = 'ready'
+            item_storage.save
+            reload
+          end
         end
-        
-        if size_on_storage != item_params[:size]
-          item_storage.status = 'error'
-          item_storage.save
-          FC::Error.raise "Check size after copy error", :item_id => item.id, :item_storage_id => item_storage.id 
-        end
-        
-        item_storage.status = 'ready'
-        item_storage.save
-        item.reload
-        return item
       end
     end
     
