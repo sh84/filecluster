@@ -1,6 +1,7 @@
 class TaskThread < BaseThread
   def go(storage_name)
     while task = $tasks[storage_name].shift do
+      $log.debug("TaskThread: run task type=#{task[:action]}, item_storage=#{task[:item_storage].id}")
       if task[:action] == :delete
         make_delete(task[:item_storage])
       elsif task[:action] == :copy
@@ -8,6 +9,7 @@ class TaskThread < BaseThread
       else
         error "Unknown task action: #{task[:action]}"
       end
+      $log.debug("TaskThread: Finish task type=#{task[:action]}, item_storage=#{task[:item_storage].id}")
     end
   end
   

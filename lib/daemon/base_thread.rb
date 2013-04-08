@@ -7,6 +7,7 @@ class BaseThread < Thread
         error "#{self.class}: #{e.message}; #{e.backtrace.join(', ')}"
       end
       FC::DB.close
+      $log.debug("close #{self.class}")
     end
   end
 end

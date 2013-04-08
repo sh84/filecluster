@@ -9,9 +9,9 @@ module FC
     end
     
     # get available storage for object by size
-    def get_proper_storage(size)
+    def get_proper_storage(size, exclude = [])
       get_storages.detect do |storage|
-        storage.up? && storage.size + size < storage.size_limit
+        !exclude.include?(storage.name) && storage.up? && storage.size + size < storage.size_limit
       end
     end
   end

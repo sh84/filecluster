@@ -17,15 +17,16 @@ $global_daemon_thread = nil
 
 default_db_config = File.expand_path(File.dirname(__FILE__))+'/db.yml'
 descriptions = {
-  :config      => {:short => 'c',  :full => 'config',     :default => default_db_config, :text => 'path to db.yml file'},
-  :log_level   => {:short => 'l',  :full => 'log_level',  :default => 'info', :text => 'log level (fatal, error, warn, info or debug)'},
-  :cycle_time  => {:short => 't',  :full => 'time',       :default => 30, :text => 'Time between checks database and storages available'},
-  :global_wait => {:short => 'g', :full => 'wait',       :default => 120, :text => 'Time between runs global daemon if it does not running'},
-  :curr_host   => {:short => 'h', :full => 'host',       :default => FC::Storage.curr_host, :text => 'Time between runs global daemon if it does not running'}
+  :config      => {:short => 'c',  :full => 'config',     :default => default_db_config, :text => "path to db.yml file, default #{default_db_config}"},
+  :log_level   => {:short => 'l',  :full => 'log_level',  :default => 'info', :text => 'log level (fatal, error, warn, info or debug), default info'},
+  :cycle_time  => {:short => 't',  :full => 'time',       :default => 30, :text => 'Time between checks database and storages available, default 30'},
+  :global_wait => {:short => 'g', :full => 'wait',       :default => 120, :text => 'Time between runs global daemon if it does not running, default 120'},
+  :curr_host   => {:short => 'h', :full => 'host',       :default => FC::Storage.curr_host, :text => "Host for storages, default #{FC::Storage.curr_host}"}
 }
 options = option_parser_init(descriptions, "Usage: fc-daemon [options]\nSetup FileCluster database connection options.\nCreate tables if nessary.")
 FC::Storage.instance_variable_set(:@uname, options[:curr_host]) if options[:curr_host] && options[:curr_host] != FC::Storage.curr_host
 
+STDOUT.sync = true
 $log = Logger.new(STDOUT)
 $log.formatter = proc do |severity, datetime, progname, msg|
   "[#{datetime}] [#{severity}] #{msg}\n"
@@ -46,8 +47,12 @@ trap("INT") {quit_on_quit}
 
 while true do
   if $exit_signal
+    $log.debug('wait tasks_threads')
     $tasks_threads.each {|t| t.join}
-    $global_daemon_thread.join if $global_daemon_thread
+    if $global_daemon_thread
+      $log.debug('wait global_daemon_thread')
+      $global_daemon_thread.join
+    end 
     $log.info('Exit')
     exit
   else
@@ -57,5 +62,6 @@ while true do
     update_tasks
     run_tasks
   end
+  $log.debug('sleep')
   sleep options[:cycle_time].to_i
 end
