@@ -65,6 +65,8 @@ def update_tasks
     cond = "storage_name in (#{storages_names}) AND status='#{type.to_s}'"
     ids = $tasks.map{|storage_name, storage_tasks| storage_tasks.select{|task| task[:action] == type}}.
       flatten.map{|task| task[:item_storage].id}
+    $curr_task.map{|storage_name, task| ids << task[:item_storage].id if task && task[:action] == type}
+      
     cond << "AND id not in (#{ids.join(',')})" if (ids.length > 0)
     FC::ItemStorage.where(cond).each do |item_storage|
       $tasks[item_storage.storage_name] = [] unless $tasks[item_storage.storage_name]

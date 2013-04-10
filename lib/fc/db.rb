@@ -44,7 +44,8 @@ module FC
           status ENUM('new', 'ready', 'error', 'delete') NOT NULL DEFAULT 'new',
           time int DEFAULT NULL,
           copies int NOT NULL DEFAULT 0,
-          PRIMARY KEY (id), UNIQUE KEY (name(255), policy_id), KEY (outer_id), KEY (time, status), KEY (status)
+          PRIMARY KEY (id), UNIQUE KEY (name(255), policy_id), 
+          KEY (outer_id), KEY (time, status), KEY (status),  KEY (copies, status, policy_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
       })
       proc_time = %{
@@ -61,7 +62,7 @@ module FC
           path text NOT NULL DEFAULT '',
           url text NOT NULL DEFAULT '',
           size bigint NOT NULL DEFAULT 0,
-          size_limit int NOT NULL DEFAULT 0,
+          size_limit bigint NOT NULL DEFAULT 0,
           check_time int DEFAULT NULL,
           PRIMARY KEY (id), UNIQUE KEY (name), KEY (host)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
@@ -72,8 +73,13 @@ module FC
           (SELECT #{@prefix}policies.id, GROUP_CONCAT(name) as storages FROM #{@prefix}policies LEFT JOIN #{@prefix}storages ON FIND_IN_SET(name, storages) GROUP BY #{@prefix}policies.id) as new_policy
         SET #{@prefix}policies.storages = new_policy.storages WHERE #{@prefix}policies.id = new_policy.id;
       }
+      proc_update = %{
+        IF OLD.name <> NEW.name THEN 
+          #{proc}
+        END IF;
+      }
       FC::DB.connect.query("CREATE TRIGGER fc_storages_after_delete AFTER DELETE on #{@prefix}storages FOR EACH ROW BEGIN #{proc} END")
-      FC::DB.connect.query("CREATE TRIGGER fc_storages_after_update AFTER UPDATE on #{@prefix}storages FOR EACH ROW BEGIN #{proc} END")
+      FC::DB.connect.query("CREATE TRIGGER fc_storages_after_update AFTER UPDATE on #{@prefix}storages FOR EACH ROW BEGIN #{proc_update} END")
       
       FC::DB.connect.query(%{
         CREATE TABLE #{@prefix}policies (
@@ -98,7 +104,7 @@ module FC
           storage_name varchar(255) DEFAULT NULL,
           status ENUM('new', 'copy', 'error', 'ready', 'delete') NOT NULL DEFAULT 'new',
           time int DEFAULT NULL,
-          PRIMARY KEY (id), UNIQUE KEY (item_id, storage_name), KEY (storage_name), KEY (time, status), KEY (status),
+          PRIMARY KEY (id), UNIQUE KEY (item_id, storage_name), KEY (storage_name), KEY (time, status), KEY (status, storage_name),          
           FOREIGN KEY (item_id) REFERENCES #{@prefix}items(id) ON UPDATE RESTRICT ON DELETE RESTRICT,
           FOREIGN KEY (storage_name) REFERENCES #{@prefix}storages(name) ON UPDATE RESTRICT ON DELETE RESTRICT
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci

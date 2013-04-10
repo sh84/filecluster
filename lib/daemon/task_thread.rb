@@ -1,7 +1,8 @@
 class TaskThread < BaseThread
   def go(storage_name)
     while task = $tasks[storage_name].shift do
-      $log.debug("TaskThread: run task type=#{task[:action]}, item_storage=#{task[:item_storage].id}")
+      $curr_task[storage_name] = task
+      $log.debug("TaskThread(#{storage_name}): run task type=#{task[:action]}, item_storage=#{task[:item_storage].id}")
       if task[:action] == :delete
         make_delete(task[:item_storage])
       elsif task[:action] == :copy
@@ -9,20 +10,22 @@ class TaskThread < BaseThread
       else
         error "Unknown task action: #{task[:action]}"
       end
-      $log.debug("TaskThread: Finish task type=#{task[:action]}, item_storage=#{task[:item_storage].id}")
+      $curr_task[storage_name] = nil
+      $log.debug("TaskThread(#{storage_name}): Finish task type=#{task[:action]}, item_storage=#{task[:item_storage].id}")
     end
   end
   
   def make_delete(item_storage)
     storage = $storages.detect{|s| s.name == item_storage.storage_name}
     item = FC::Item.find(item_storage.item_id)
-    storage.delete_file(item_storage.name)
+    storage.delete_file(item.name)
     item_storage.delete
   rescue Exception => e
     error "Delete item_storage error: #{e.message}; #{e.backtrace.join(', ')}", :item_id => item_storage.item_id, :item_storage_id => item_storage.id
   end
   
   def make_copy(item_storage)
+    # TODO: не лазить в базу за item, item_storages - перенести на стадию подготовки task-а
     storage = $storages.detect{|s| s.name == item_storage.storage_name}
     item = FC::Item.find(item_storage.item_id)
     src_item_storage = FC::ItemStorage.where("item_id = ? AND status = 'ready'", item.id).sample

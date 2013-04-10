@@ -10,6 +10,7 @@ require 'daemon'
 
 $storages = []
 $tasks = {}           # tasks by storage name
+$curr_task = {}       # task by storage name
 $tasks_threads = {}   # threads by storage name
 $check_threads = {}   # threads by storage name
 $exit_signal = false 
@@ -29,7 +30,7 @@ FC::Storage.instance_variable_set(:@uname, options[:curr_host]) if options[:curr
 STDOUT.sync = true
 $log = Logger.new(STDOUT)
 $log.formatter = proc do |severity, datetime, progname, msg|
-  "[#{datetime}] [#{severity}] #{msg}\n"
+  "[#{datetime}] [#{severity}] [#{Thread.current.object_id}] #{msg}\n"
 end
 $log.level = Logger.const_get(options[:log_level].upcase)
 $log.info('Started')
