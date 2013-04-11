@@ -39,7 +39,7 @@ class GlobalDaemonThread < BaseThread
     end
     
     sql = "SELECT i.id as item_id, i.size, i.copies as item_copies, GROUP_CONCAT(ist.storage_name) as storages, p.id as policy_id, p.copies as policy_copies "+
-      "FROM #{FC::DB.prefix}items as i, #{FC::DB.prefix}policies as p, #{FC::DB.prefix}items_storages as ist WHERE "+
+      "FROM #{FC::Item.table_name} as i, #{FC::Policy.table_name} as p, #{FC::ItemStorage.table_name} as ist WHERE "+
       "i.policy_id = p.id AND ist.item_id = i.id AND i.copies > 0 AND i.copies < p.copies AND i.status = 'ready' AND ist.status <> 'delete' GROUP BY i.id LIMIT 1000"
     r = FC::DB.connect.query(sql)
     r.each do |row|

@@ -36,9 +36,11 @@ Command:
     'show variable', 
     %q{Usage: fc-manage [options] show <variable>
 Variable:
-   current_host      show current host
-   global_daemon     show host and uptime where run global daemon
-   errors [<count>]  show last count (default 10) errors
+   current_host        show current host
+   global_daemon       show host and uptime where run global daemon
+   errors [<count>]    show last count (default 10) errors
+   host_info [<host>]  show info for host (default current host)
+   items_info          show items statistics       
 }]
 }
 desc = %q{Get info and manage for storages, policies and items.

@@ -27,7 +27,7 @@ module FC
     end
     
     def check_time_delay
-      Time.new.to_i - storage.check_time.to_i
+      Time.new.to_i - check_time.to_i
     end
     
     def up?
