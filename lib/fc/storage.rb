@@ -26,6 +26,10 @@ module FC
       save
     end
     
+    def check_time_delay
+      Time.new.to_i - storage.check_time.to_i
+    end
+    
     def up?
       Time.new.to_i - check_time.to_i <= self.class.check_time_limit
     end

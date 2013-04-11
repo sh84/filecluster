@@ -1,9 +1,11 @@
 #!/usr/bin/env ruby
 
+$:.unshift File.expand_path('../lib', File.dirname(__FILE__))
 require 'optparse'
 require 'psych'
 require 'filecluster'
 require 'utils'
+require 'readline'
 
 descriptions = {
   :host =>       {:short => 'h', :full => 'host',     :default => 'localhost', :text => 'mysql host name, default "localhost"', :save => true},
@@ -14,14 +16,17 @@ descriptions = {
   :prefix =>     {:short => 't', :full => 'prefix',   :default => '',          :text => 'tables prefix, default ""', :save => true},
   :init_tables =>{:short => 'i', :full => 'init',     :default => false,       :text => 'init tables, default no', :no_val => true}
 }
-
-options = option_parser_init(descriptions, "Usage: fc-init-db [options]\nSetup FileCluster database connection options.\nCreate tables if nessary.")
+desc = %q{Setup FileCluster database connection options.
+Create tables if nessary.
+Usage: fc-init-db [options]}
+options = option_parser_init(descriptions, desc)
+options.delete('optparse')
+trap("INT", proc {exit})
 
 puts options.inspect.gsub(/[\{\}\:]/, "").gsub(", ", "\n").gsub(/(.{7,})=>/, "\\1:\t").gsub("=>", ":\t\t")
-print "Continue? (y/n) "
-s = STDIN.gets.strip.downcase
-puts ""
 
+s = Readline.readline("Continue? (y/n) ", false).strip.downcase
+puts ""
 if s == "y" || s == "yes"
   print "Test connection..  "
   FC::DB.connect_by_config(options)

@@ -24,7 +24,9 @@ descriptions = {
   :global_wait => {:short => 'g', :full => 'wait',       :default => 120, :text => 'Time between runs global daemon if it does not running, default 120'},
   :curr_host   => {:short => 'h', :full => 'host',       :default => FC::Storage.curr_host, :text => "Host for storages, default #{FC::Storage.curr_host}"}
 }
-options = option_parser_init(descriptions, "Usage: fc-daemon [options]\nSetup FileCluster database connection options.\nCreate tables if nessary.")
+desc = %q{Run FileCluster daemon.
+Usage: fc-daemon [options]}
+options = option_parser_init(descriptions, desc)
 FC::Storage.instance_variable_set(:@uname, options[:curr_host]) if options[:curr_host] && options[:curr_host] != FC::Storage.curr_host
 
 STDOUT.sync = true

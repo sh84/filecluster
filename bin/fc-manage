@@ -1,0 +1,100 @@
+#!/usr/bin/env ruby
+
+$:.unshift File.expand_path('../lib', File.dirname(__FILE__))
+require 'psych'
+require 'logger'
+require 'optparse'
+require 'filecluster'
+require 'utils'
+require 'manage'
+
+default_db_config = File.expand_path(File.dirname(__FILE__))+'/db.yml'
+descriptions = {
+  :config      => {:short => 'c',  :full => 'config',     :default => default_db_config, :text => "path to db.yml file, default #{default_db_config}"},
+  :curr_host   => {:short => 'h', :full => 'host',       :default => FC::Storage.curr_host, :text => "Host for storages, default #{FC::Storage.curr_host}"}
+}
+commands_help = {
+  'storages' => [
+    'show list and manage storages', 
+    %q{Usage: fc-manage [options] storages <command>
+Command:
+   list        show all stotages for all hosts
+   show <name> show full info for storage   
+   add         add new storage
+   rm <name>   delete storage
+}],
+  'policies' => [
+    'show list and manage plicies', 
+    %q{Usage: fc-manage [options] plicies <command>
+Command:
+   list        show all plicies
+   show <id>   show full info for policy   
+   add         add new policy
+   rm <id>     delete policy
+}],
+  'show' => [
+    'show variable', 
+    %q{Usage: fc-manage [options] show <variable>
+Variable:
+   current_host      show current host
+   global_daemon     show host and uptime where run global daemon
+   errors [<count>]  show last count (default 10) errors
+}]
+}
+desc = %q{Get info and manage for storages, policies and items.
+Usage: fc-manage [options] <command> [<args>]
+Commands:
+}
+commands_help.each{|key, val| desc << "   #{key}#{" "*(10-key.size)}#{val[0]}\n"}
+desc << "   help      show help for commands ('fc-manage help <command>')\n"
+$options = option_parser_init(descriptions, desc)
+FC::Storage.instance_variable_set(:@uname, $options[:curr_host]) if $options[:curr_host] && $options[:curr_host] != FC::Storage.curr_host
+trap("INT", proc {exit})
+
+STDOUT.sync = true
+db_options = Psych.load(File.read($options[:config]))
+FC::DB.connect_by_config(db_options.merge(:reconnect => true, :multi_threads => true))
+
+command = ARGV[0]
+if ARGV.empty?
+  puts $options['optparse']
+  exit
+end
+
+case command
+when 'help'
+  if !ARGV[1]
+    puts $options['optparse']
+  elsif commands_help[ARGV[1]]
+    puts commands_help[ARGV[1]][1]
+  else
+    puts "'#{command}' is not a fc-manage command. See 'fc-manage --help'."
+  end
+when 'show'
+  if !ARGV[1]
+    puts "Need variable name. See 'fc-manage help show'."
+  elsif self.private_methods.member?("show_#{ARGV[1]}".to_sym)
+    send "show_#{ARGV[1]}"
+  else
+    puts "Unknown variable. See 'fc-manage help show'."
+  end
+when 'storages'
+  if !ARGV[1]
+    puts "Need command. See 'fc-manage help storages'."
+  elsif self.private_methods.member?("storages_#{ARGV[1]}".to_sym)
+    send "storages_#{ARGV[1]}"
+  else
+    puts "Unknown command. See 'fc-manage help storages'."
+  end
+when 'policies'
+  if !ARGV[1]
+    puts "Need command. See 'fc-manage help policies'."
+  elsif self.private_methods.member?("policies_#{ARGV[1]}".to_sym)
+    send "policies_#{ARGV[1]}"
+  else
+    puts "Unknown command. See 'fc-manage help policies'."
+  end
+else
+  puts "'#{command}' is not a fc-manage command. See 'fc-manage --help'."
+end
+
