@@ -4,12 +4,12 @@ module FC
   module DB
     class << self; attr_accessor :options, :prefix end
     
-    def DB.connect_by_config(options)
+    def self.connect_by_config(options)
       @options = options.clone
       @options[:port] = options[:port].to_i if options[:port]
+      @prefix = options[:prefix].to_s
       @connects = {}
       @connects[Thread.current.object_id] = Mysql2::Client.new(@options)
-      @prefix = options[:prefix].to_s
     end
     
     def self.connect
@@ -18,6 +18,13 @@ module FC
       else
         @connects.first[1]
       end
+    end
+    
+    def self.connect=(connect, options = {})
+      @options = connect.query_options.merge(options)
+      @prefix = @options[:prefix].to_s
+      @connects = {}
+      @connects[Thread.current.object_id] = connect
     end
     
     def self.close
