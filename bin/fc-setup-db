@@ -14,7 +14,8 @@ descriptions = {
   :password =>   {:short => 'p', :full => 'password', :default => '',          :text => 'mysql password, default ""', :save => true},
   :port =>       {:short => 'P', :full => 'port',     :default => '3306',      :text => 'mysql port, default "3306"', :save => true},
   :prefix =>     {:short => 't', :full => 'prefix',   :default => '',          :text => 'tables prefix, default ""', :save => true},
-  :init_tables =>{:short => 'i', :full => 'init',     :default => false,       :text => 'init tables, default no', :no_val => true}
+  :init_tables =>{:short => 'i', :full => 'init',     :default => false,       :text => 'init tables, default no', :no_val => true},
+  :force =>      {:short => 'f', :full => 'force',    :default => false,       :text => 'do not ask questions', :no_val => true}
 }
 desc = %q{Setup FileCluster database connection options.
 Create tables if nessary.
@@ -25,7 +26,7 @@ trap("INT", proc {exit})
 
 puts options.inspect.gsub(/[\{\}\:]/, "").gsub(", ", "\n").gsub(/(.{7,})=>/, "\\1:\t").gsub("=>", ":\t\t")
 
-s = Readline.readline("Continue? (y/n) ", false).strip.downcase
+s = options[:force] ? 'y' : Readline.readline("Continue? (y/n) ", false).strip.downcase
 puts ""
 if s == "y" || s == "yes"
   print "Test connection..  "
