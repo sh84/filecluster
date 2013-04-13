@@ -5,7 +5,7 @@ require 'optparse'
 require 'psych'
 require 'filecluster'
 require 'utils'
-require 'readline'
+require 'rb-readline'
 
 descriptions = {
   :host =>       {:short => 'h', :full => 'host',     :default => 'localhost', :text => 'mysql host name, default "localhost"', :save => true},

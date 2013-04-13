@@ -31,7 +31,7 @@ module FC
     end
     
     def up?
-      Time.new.to_i - check_time.to_i <= self.class.check_time_limit
+      Time.new.to_i - check_time.to_i < self.class.check_time_limit
     end
     
     # copy local_path to storage

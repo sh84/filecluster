@@ -4,8 +4,10 @@ module FC
   class Item < DbBase
     set_table :items, 'name, tag, outer_id, policy_id, dir, size, status, time, copies'
     
-    # create item by local path 
-    # TODO проверка curr_host и local_path одному из доступных стораджей -> создание без копирования (для кусочков)
+    # Create item by local path.
+    # Additional options: 
+    #   :replace=true - replace item if it exists
+    # If item_name is part of local_path it prcessed as inplace - local_path is valid path to the item for policy
     def self.create_from_local(local_path, item_name, policy, options={})
       raise 'Path not exists' unless File.exists?(local_path)
       raise 'Policy is not FC::Policy' unless policy.instance_of?(FC::Policy)
@@ -16,8 +18,14 @@ module FC
         :size => `du -sb #{local_path}`.to_i
       })
       item_params.delete(:replace)
+      item_params.delete(:inplace)
       raise 'Name is empty' if item_params[:name].empty?
       raise 'Zero size path' if item_params[:size] == 0
+      
+      if local_path.include?(item_name)
+        storage = policy.get_storages.detect{|s| local_path.index(s.path) == 0 && local_path.sub(s.path, '') == item_params[:name]}
+        FC::Error.raise "local_path #{local_path} is not valid path for policy ##{policy.id}" unless storage
+      end
       
       # new item?
       item = FC::Item.where('name=? AND policy_id=?', item_params[:name], policy.id).first
@@ -35,11 +43,16 @@ module FC
       end
       item.save
       
-      storage = policy.get_proper_storage(item.size)
-      FC::Error.raise 'No available storage', :item_id => item.id unless storage
+      if storage
+        item_storage = item.make_item_storage(storage, 'ready')
+        item.reload
+      else 
+        storage = policy.get_proper_storage(item.size)
+        FC::Error.raise 'No available storage', :item_id => item.id unless storage
+        item_storage = item.make_item_storage(storage)
+        item.copy_item_storage(local_path, storage, item_storage)
+      end
       
-      item_storage = item.make_item_storage(storage)
-      item.copy_item_storage(local_path, storage, item_storage)
       return item
     end
     

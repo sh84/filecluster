@@ -18,10 +18,18 @@ class PolicyTest < Test::Unit::TestCase
   end 
 
   should "get_storages" do
+    FC::Policy.storages_cache_time = 10
     assert_same_elements @@storages.map(&:id), @@policy.get_storages.map(&:id)
+    FC::Storage.new(:name => 'rec2-sdc', :host => 'rec2').save
+    @@policy.storages = 'rec1-sda,rec2-sda,rec2-sdc'
+    @@policy.save
+    assert_equal @@storages.size, @@policy.get_storages.size
+    FC::Policy.storages_cache_time = 0
+    assert_equal @@storages.size+1, @@policy.get_storages.size
   end
   
   should "get_proper_storage" do
+    FC::Policy.storages_cache_time = 0
     assert_nil @@policy.get_proper_storage(1), 'all storages down'
     @@storages[0].update_check_time
     assert_equal @@storages[0].id, @@policy.get_proper_storage(1).id, 'first storages up'

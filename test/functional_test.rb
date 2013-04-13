@@ -94,4 +94,9 @@ class FunctionalTest < Test::Unit::TestCase
     assert_equal errors_count+1, FC::Error.where.count, "Error not saved after check size" 
   end
   
+  should "item create_from_local inplace" do
+    tmp_file_path = "/tmp/host2-sda/inplace_test"
+    `cp #{@@test_file_path} #{tmp_file_path}`
+    assert_nothing_raised { @item = FC::Item.create_from_local(tmp_file_path, 'inplace_test', @@policies[0]) }
+  end
 end
