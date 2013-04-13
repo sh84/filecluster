@@ -14,9 +14,13 @@ module FC
       @database_fields = params[:database_fields] || {}
     end
     
+    def self.table_name
+      "#{FC::DB.prefix}#{@table_name}"
+    end
+        
     # define table name and fields
     def self.set_table(name, fields)
-      self.table_name = "#{FC::DB.prefix}#{name}"
+      @table_name = name
       self.table_fields = fields.split(',').map{|e| e.gsub(' ','')}
       self.table_fields.each{|e| attr_accessor e.to_sym}
     end

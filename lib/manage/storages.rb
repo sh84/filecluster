@@ -41,7 +41,9 @@ def storages_add
   size_limit = human_to_size stdin_read_val('Size limit') {|val| "Size limit not is valid size." unless human_to_size(val)}
   begin
     storage = FC::Storage.new(:name => name, :host => host, :path => path, :url => url, :size_limit => size_limit)
+    print "Calc current size.. "
     size = storage.file_size('')
+    puts "ok"
   rescue Exception => e
     puts "Error: #{e.message}"
     exit
