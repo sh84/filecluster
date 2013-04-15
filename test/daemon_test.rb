@@ -37,12 +37,12 @@ class DaemonTest < Test::Unit::TestCase
       `dd if=/dev/urandom of=#{@@test_file_path} bs=1M count=1 2>&1`
       
       @@storages = []
-      @@storages << FC::Storage.new(:name => 'host1-sda', :host => 'host1', :path => '/tmp/host1-sda/', :size_limit => 1000000000)
-      @@storages << FC::Storage.new(:name => 'host1-sdb', :host => 'host1', :path => '/tmp/host1-sdb/', :size_limit => 1000000000)
-      @@storages << FC::Storage.new(:name => 'host1-sdc', :host => 'host1', :path => '/tmp/host1-sdc/', :size_limit => 1000000000)
+      @@storages << FC::Storage.new(:name => 'host1-sda', :host => 'host1', :path => '/tmp/host1-sda/', :copy_id => 1, :size_limit => 1000000000)
+      @@storages << FC::Storage.new(:name => 'host1-sdb', :host => 'host1', :path => '/tmp/host1-sdb/', :copy_id => 2, :size_limit => 1000000000)
+      @@storages << FC::Storage.new(:name => 'host1-sdc', :host => 'host1', :path => '/tmp/host1-sdc/', :copy_id => 1, :size_limit => 1000000000)
       @@storages.each { |storage| storage.save}
       
-      @@policy = FC::Policy.new(:storages => 'host1-sda,host1-sdb,host1-sdc', :copies => 2)
+      @@policy = FC::Policy.new(:create_storages => 'host1-sda,host1-sdb,host1-sdc', :copy_storages => 'host1-sda,host1-sdb,host1-sdc', :copies => 2, :name => 'policy 1')
       @@policy.save
       
       # wait for running fc-daemon
@@ -70,9 +70,9 @@ class DaemonTest < Test::Unit::TestCase
     
     FC::Storage.any_instance.stubs(:host).returns('host1')
     FC::Storage.stubs(:curr_host).returns('host1')
-    assert_nothing_raised { @item1 = FC::Item.create_from_local(@@test_file_path, 'test1', @@policy, {:tag => 'test1'}) }
-    assert_nothing_raised { @item2 = FC::Item.create_from_local(@@test_file_path, 'test2', @@policy, {:tag => 'test2'}) }
-    assert_nothing_raised { @item3 = FC::Item.create_from_local(@@test_file_path, 'test3', @@policy, {:tag => 'test3'}) }
+    assert_nothing_raised { @item1 = FC::Item.create_from_local(@@test_file_path, 'bla/bla/test1', @@policy, {:tag => 'test1'}) }
+    assert_nothing_raised { @item2 = FC::Item.create_from_local(@@test_file_path, 'bla/bla/test2', @@policy, {:tag => 'test2'}) }
+    assert_nothing_raised { @item3 = FC::Item.create_from_local(@@test_file_path, 'bla/bla/test3', @@policy, {:tag => 'test3'}) }
     
     @@policy.copies = 3
     @@policy.save
@@ -81,7 +81,7 @@ class DaemonTest < Test::Unit::TestCase
     # wait for copy
     [1, 2, 3].each do |i|
       ['b', 'c'].each do |j|
-        assert_equal `du -b /tmp/host1-sda/test$i 2>&1`.to_i, `du -b /tmp/host$i-sd$j/test$i 2>&1`.to_i
+        assert_equal `du -b /tmp/host1-sda/bla/bla/test$i 2>&1`.to_i, `du -b /tmp/host$i-sd$j/bla/bla/test$i 2>&1`.to_i
       end
     end
         
@@ -91,7 +91,7 @@ class DaemonTest < Test::Unit::TestCase
     item_storage.status = 'delete'
     item_storage.save
     sleep 2
-    assert_equal 0, `du -b /tmp/host1-sdc/test1 2>&1`.to_i
+    assert_equal 0, `du -b /tmp/host1-sdc/bla/bla/test1 2>&1`.to_i
     
     assert_equal @@errors_count, FC::Error.where.count, "new errors in errors table"
   end

@@ -7,7 +7,6 @@ class StorageTest < Test::Unit::TestCase
   
   should "initialize" do
     assert_raise(RuntimeError) { FC::Storage.new :path => 'test' }
-    assert_raise(RuntimeError) { FC::Storage.new :path => '/test' }
     assert_raise(RuntimeError) { FC::Storage.new :path => 'test/' }
     assert_nothing_raised { FC::Storage.new :path => '/test/' }
   end

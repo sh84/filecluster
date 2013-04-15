@@ -18,19 +18,22 @@ commands_help = {
     'show list and manage storages', 
     %q{Usage: fc-manage [options] storages <command>
 Command:
-   list        show all stotages for all hosts
-   show <name> show full info for storage   
-   add         add new storage
-   rm <name>   delete storage
+   list                show all stotages for all hosts
+   show <name>         show full info for storage   
+   add                 add new storage
+   rm <name>           delete storage
+   change <name>       change storage attributes
+   update_size <name>  update storage size
 }],
   'policies' => [
     'show list and manage plicies', 
     %q{Usage: fc-manage [options] plicies <command>
 Command:
-   list        show all plicies
-   show <id>   show full info for policy   
-   add         add new policy
-   rm <id>     delete policy
+   list                show all plicies
+   show <id/name>      show full info for policy   
+   add                 add new policy
+   rm <id/name>        delete policy
+   change <id/name>    change policy attributes
 }],
   'show' => [
     'show variable', 

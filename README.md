@@ -1,12 +1,21 @@
-# Dstorage
+# FileCluster
 
-TODO: Write a gem description
+A set of scripts to manage files on multiple dc/host/drive.
+
+Item (storage unit)- file or folder.
+Storage - folder, usually separate drive.
+Policy - rule for selecting storage to store the item and сreate copies.
+
+Daemon monitors the availability of each storage and copy files between them.
+
+If the storage is not available or ended the available space is used another available storage according to the policy.
+
 
 ## Installation
 
 Add this line to your application's Gemfile:
 
-    gem 'dstorage'
+    gem 'filecluster'
 
 And then execute:
 
@@ -14,7 +23,15 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install dstorage
+    $ gem install filecluster
+
+## Create policy
+
+Selecting available storage to store item by policy.create_storages (from left to tight).
+    
+## Copy policy
+
+Selecting available storage to copy item by policy.copy_storages (from left to tight) with the nearest copy_id.
 
 ## Usage
 

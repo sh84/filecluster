@@ -40,9 +40,9 @@ def human_to_size(size)
   result.to_i
 end
 
-def stdin_read_val(name)
+def stdin_read_val(name, can_empty = false)
   while val = Readline.readline("#{name}: ", false).strip.downcase
-    if val.empty?
+    if val.empty? && !can_empty
       puts "Input non empty #{name}."
     else 
       if block_given?

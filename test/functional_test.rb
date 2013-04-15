@@ -20,10 +20,10 @@ class FunctionalTest < Test::Unit::TestCase
       @@storages.each { |storage| storage.save}
       
       @@policies = []
-      @@policies << FC::Policy.new(:storages => 'host1-sda,host2-sda', :copies => 2)
-      @@policies << FC::Policy.new(:storages => 'host1-sdb,host2-sdb', :copies => 2)
-      @@policies << FC::Policy.new(:storages => 'host3-sda', :copies => 1)
-      @@policies << FC::Policy.new(:storages => 'host2-sda', :copies => 1)
+      @@policies << FC::Policy.new(:create_storages => 'host1-sda,host2-sda', :copy_storages => 'host1-sdb', :copies => 2, :name => 'policy 1')
+      @@policies << FC::Policy.new(:create_storages => 'host1-sdb,host2-sdb', :copy_storages => 'host1-sdb', :copies => 2, :name => 'policy 2')
+      @@policies << FC::Policy.new(:create_storages => 'host3-sda', :copy_storages => 'host1-sdb', :copies => 1, :name => 'policy 3')
+      @@policies << FC::Policy.new(:create_storages => 'host2-sda', :copy_storages => 'host1-sdb', :copies => 1, :name => 'policy 4')
       @@policies.each { |policy| policy.save}
     end
     def shutdown
@@ -41,22 +41,16 @@ class FunctionalTest < Test::Unit::TestCase
   end
   
   should "item create_from_local successful" do
-    assert_nothing_raised { @item = FC::Item.create_from_local(@@test_file_path, 'test1', @@policies[0], {:tag => 'test'}) }
+    assert_nothing_raised { @item = FC::Item.create_from_local(@@test_file_path, '/bla/bla/test1', @@policies[0], {:tag => 'test'}) }
     assert_kind_of FC::Item, @item
-    assert_equal `du -b /tmp/host1-sda/test1 2>&1`.to_i, `du -b #{@@test_file_path} 2>&1`.to_i
-    assert_equal `du -b /tmp/host1-sda/test1 2>&1`.to_i, @item.size
+    assert_equal `du -b /tmp/host1-sda/bla/bla/test1 2>&1`.to_i, `du -b #{@@test_file_path} 2>&1`.to_i
+    assert_equal `du -b /tmp/host1-sda/bla/bla/test1 2>&1`.to_i, @item.size
     assert_equal 'ready', @item.status
     item_storages = @item.get_item_storages
     assert_equal 1, item_storages.count
     item_storage = item_storages.first
     assert_equal 'ready', item_storage.status
     assert_equal 'host1-sda', item_storage.storage_name
-  end
-  
-  should "item create_from_local error local path" do
-    errors_count = FC::Error.where.count
-    assert_raise(RuntimeError) { FC::Item.create_from_local(@@test_file_path, 'test2', @@policies[1], {:tag => 'test'}) }
-    assert_equal errors_count+1, FC::Error.where.count, "Error not saved after error local path"
   end
   
   should "item create_from_local replace" do

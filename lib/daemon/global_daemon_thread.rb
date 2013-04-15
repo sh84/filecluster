@@ -32,13 +32,12 @@ class GlobalDaemonThread < BaseThread
     # policies.get_storages => all_policies.select
     all_policies.each do |policy|
       metaclass = class << policy; self; end
-      metaclass.send(:define_method, :get_storages) do
-        policy_storages = self.storages.split(',')
-        all_storages.select{|storage| policy_storages.member?(storage.name)}
+      metaclass.send(:define_method, :get_copy_storages) do
+        @copy_storages_cache ||= self.copy_storages.split(',').map{|storage_name| all_storages.detect{|s| storage_name == s.name} }
       end
     end
     
-    sql = "SELECT i.id as item_id, i.size, i.copies as item_copies, GROUP_CONCAT(ist.storage_name) as storages, p.id as policy_id, p.copies as policy_copies "+
+    sql = "SELECT i.id as item_id, i.size, i.copies as item_copies, GROUP_CONCAT(ist.storage_name ORDER BY ist.id) as storages, p.id as policy_id, p.copies as policy_copies "+
       "FROM #{FC::Item.table_name} as i, #{FC::Policy.table_name} as p, #{FC::ItemStorage.table_name} as ist WHERE "+
       "i.policy_id = p.id AND ist.item_id = i.id AND i.copies > 0 AND i.copies < p.copies AND i.status = 'ready' AND ist.status <> 'delete' GROUP BY i.id LIMIT 1000"
     r = FC::DB.connect.query(sql)
@@ -50,8 +49,9 @@ class GlobalDaemonThread < BaseThread
       elsif item_storages.size >= row['policy_copies']
         $log.warn("GlobalDaemonThread: ItemStorage count >= policy.copies for item #{row['item_id']}")
       else
+        src_storage = all_storages.detect{|s| item_storages.first == s.name}
         policy = all_policies.detect{|p| row['policy_id'] == p.id}
-        storage = policy.get_proper_storage(row['size'], item_storages) if policy
+        storage = policy.get_proper_storage_for_copy(row['size'], src_storage.copy_id, item_storages) if src_storage && policy 
         error 'No available storage', :item_id => row['item_id'] unless storage
         FC::Item.new(:id => row['item_id']).make_item_storage(storage, 'copy')
       end

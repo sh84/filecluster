@@ -23,7 +23,7 @@ module FC
       raise 'Zero size path' if item_params[:size] == 0
       
       if local_path.include?(item_name)
-        storage = policy.get_storages.detect{|s| local_path.index(s.path) == 0 && local_path.sub(s.path, '') == item_params[:name]}
+        storage = policy.get_create_storages.detect{|s| local_path.index(s.path) == 0 && local_path.sub(s.path, '') == item_params[:name]}
         FC::Error.raise "local_path #{local_path} is not valid path for policy ##{policy.id}" unless storage
       end
       
@@ -47,7 +47,7 @@ module FC
         item_storage = item.make_item_storage(storage, 'ready')
         item.reload
       else 
-        storage = policy.get_proper_storage(item.size)
+        storage = policy.get_proper_storage_for_create(item.size)
         FC::Error.raise 'No available storage', :item_id => item.id unless storage
         item_storage = item.make_item_storage(storage)
         item.copy_item_storage(local_path, storage, item_storage)
