@@ -39,7 +39,8 @@ end
 
 def update_storages
   $log.debug('Update storages')
-  $storages = FC::Storage.where('host = ?', FC::Storage.curr_host)
+  $all_storages = FC::Storage.where
+  $storages = $all_storages.select{|s| s.host == FC::Storage.curr_host}
 end
 
 def storages_check

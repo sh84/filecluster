@@ -77,5 +77,11 @@ class PolicyTest < Test::Unit::TestCase
     @@policy.copy_storages = 'rec2-sda,rec3-sda,rec1-sda'
     @@policy.save
     assert_equal 'rec2-sda', @@policy.get_proper_storage_for_copy(1, 4).name, 'storage by copy_id'
+    
+    @@policy.copy_storages = 'rec3-sda,rec1-sda,rec2-sda,'
+    @@policy.save
+    @@storages[0].check_time = 0
+    @@storages[0].save
+    assert_equal 'rec2-sda', @@policy.get_proper_storage_for_copy(1, 1).name, 'storage by copy_id'
   end
 end

@@ -23,16 +23,18 @@ module FC
       raise 'Zero size path' if item_params[:size] == 0
       
       if local_path.include?(item_name)
-        storage = policy.get_create_storages.detect{|s| local_path.index(s.path) == 0 && local_path.sub(s.path, '') == item_params[:name]}
+        storage = policy.get_create_storages.detect do |s| 
+          s.host == FC::Storage.curr_host && local_path.index(s.path) == 0 && local_path.sub(s.path, '') == item_params[:name]
+        end
         FC::Error.raise "local_path #{local_path} is not valid path for policy ##{policy.id}" unless storage
       end
       
       # new item?
       item = FC::Item.where('name=? AND policy_id=?', item_params[:name], policy.id).first
       if item
-        if options[:replace]
+        if options[:replace] || storage
           # mark delete item_storages on replace
-          FC::DB.connect.query("UPDATE #{FC::ItemStorage.table_name} SET status='delete' WHERE item_id = #{item.id}")
+          FC::DB.connect.query("UPDATE #{FC::ItemStorage.table_name} SET status='delete' WHERE item_id = #{item.id}") if options[:replace] && !storage
           # replace all fields
           item_params.each{|key, val| item.send("#{key}=", val)}
         else

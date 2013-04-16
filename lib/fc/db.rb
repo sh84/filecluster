@@ -21,10 +21,7 @@ module FC
     end
     
     def self.connect=(connect, options = {})
-      @options = connect.query_options.merge(options)
-      @prefix = @options[:prefix].to_s
-      @connects = {}
-      @connects[Thread.current.object_id] = connect
+      self.connect_by_config connect.query_options.merge(options).merge(:as => :hash)
     end
     
     def self.close
@@ -52,7 +49,7 @@ module FC
           time int DEFAULT NULL,
           copies int NOT NULL DEFAULT 0,
           PRIMARY KEY (id), UNIQUE KEY (name(255), policy_id), 
-          KEY (outer_id), KEY (time, status), KEY (status),  KEY (copies, status, policy_id)
+          KEY (outer_id), KEY (time, status), KEY (status, policy_id, copies), KEY (copies, status, policy_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
       })
       proc_time = %{
