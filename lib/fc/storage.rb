@@ -53,8 +53,7 @@ module FC
     def copy_to_local(file_name, local_path)
       src_path = "#{self.path}#{file_name}"
       
-      cmd = self.class.curr_host == host ? "mkdir -p #{File.dirname(local_path)}" : "ssh -oBatchMode=yes #{self.host} 'mkdir -p #{File.dirname(local_path)}'"
-      r = `#{cmd} 2>&1`
+      r = `mkdir -p #{File.dirname(local_path)} 2>&1`
       raise r if $?.exitstatus != 0
       
       cmd = self.class.curr_host == host ? "cp -r #{src_path} #{local_path}" : "scp -rB #{self.host}:#{src_path} #{local_path}"

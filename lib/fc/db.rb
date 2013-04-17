@@ -7,7 +7,7 @@ module FC
     def self.connect_by_config(options)
       @options = options.clone
       @options[:port] = options[:port].to_i if options[:port]
-      @prefix = options[:prefix].to_s
+      @prefix = options[:prefix].to_s if options[:prefix]
       @connects = {}
       @connects[Thread.current.object_id] = Mysql2::Client.new(@options)
     end
