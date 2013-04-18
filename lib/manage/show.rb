@@ -50,6 +50,11 @@ def show_items_info
   counts.each do |r|
     puts "   #{r['status']}: #{r['cnt']}"
   end
+  puts "Items storages by status:"
+  counts = FC::DB.connect.query("SELECT status, count(*) as cnt FROM #{FC::ItemStorage.table_name} WHERE 1 GROUP BY status")
+  counts.each do |r|
+    puts "   #{r['status']}: #{r['cnt']}"
+  end
   count = FC::DB.connect.query("SELECT count(*) as cnt FROM #{FC::Item.table_name} as i, #{FC::Policy.table_name} as p WHERE i.policy_id = p.id AND i.copies > 0 AND i.copies < p.copies AND i.status = 'ready'").first['cnt']
   puts "Items to copy: #{count}"
   count = FC::DB.connect.query("SELECT count(*) as cnt FROM #{FC::Item.table_name} as i, #{FC::Policy.table_name} as p WHERE i.policy_id = p.id AND i.copies > p.copies AND i.status = 'ready'").first['cnt']
