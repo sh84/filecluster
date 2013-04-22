@@ -54,6 +54,8 @@ module FC
       self.class.table_fields.each do |key|
         db_val = @database_fields[key]
         val = self.send(key)
+        val = 1 if val == true
+        val = 0 if val == false
         if val.to_s != db_val.to_s || val.nil? && !db_val.nil? || !val.nil? && db_val.nil?
           fields << "#{key}=#{val ? (val.class == String ? "'#{FC::DB.connect.escape(val)}'" : val.to_i) : 'NULL'}"
         end

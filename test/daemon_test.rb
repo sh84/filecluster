@@ -32,9 +32,13 @@ class DaemonTest < Test::Unit::TestCase
       `rm -rf /tmp/host*-sd*`
       `mkdir -p /tmp/host1-sda/ /tmp/host1-sdb/ /tmp/host1-sdc/`
       
-      # test file to copy
+      # test files to copy
       @@test_file_path = '/tmp/fc_test_file'
       `dd if=/dev/urandom of=#{@@test_file_path} bs=1M count=1 2>&1`
+      @@test_dir_path = '/tmp/fc_test_dir'
+      `mkdir -p #{@@test_dir_path}/aaa #{@@test_dir_path}/bbb`
+      `cp #{@@test_file_path} #{@@test_dir_path}/aaa/test1`
+      `cp #{@@test_file_path} #{@@test_dir_path}/bbb/test2`
       
       @@storages = []
       @@storages << FC::Storage.new(:name => 'host1-sda', :host => 'host1', :path => '/tmp/host1-sda/', :copy_id => 1, :size_limit => 1000000000)
@@ -59,7 +63,9 @@ class DaemonTest < Test::Unit::TestCase
       FC::DB.connect.query("DELETE FROM items")
       FC::DB.connect.query("DELETE FROM policies")
       FC::DB.connect.query("DELETE FROM storages")
-      `rm -rf /tmp/host1-sda /tmp/host1-sdb /tmp/host1-sdc`
+      `rm -rf /tmp/host*-sd*`
+      `rm -rf #{@@test_file_path}`
+      `rm -rf #{@@test_dir_path}`
     end
   end
   
@@ -72,7 +78,7 @@ class DaemonTest < Test::Unit::TestCase
     FC::Storage.stubs(:curr_host).returns('host1')
     assert_nothing_raised { @item1 = FC::Item.create_from_local(@@test_file_path, 'bla/bla/test1', @@policy, {:tag => 'test1'}) }
     assert_nothing_raised { @item2 = FC::Item.create_from_local(@@test_file_path, 'bla/bla/test2', @@policy, {:tag => 'test2'}) }
-    assert_nothing_raised { @item3 = FC::Item.create_from_local(@@test_file_path, 'bla/bla/test3', @@policy, {:tag => 'test3'}) }
+    assert_nothing_raised { @item3 = FC::Item.create_from_local(@@test_dir_path, 'bla/bla/test3', @@policy, {:tag => 'test3'}) }
     
     @@policy.copies = 3
     @@policy.save
@@ -81,7 +87,7 @@ class DaemonTest < Test::Unit::TestCase
     # wait for copy
     [1, 2, 3].each do |i|
       ['b', 'c'].each do |j|
-        assert_equal `du -b /tmp/host1-sda/bla/bla/test$i 2>&1`.to_i, `du -b /tmp/host$i-sd$j/bla/bla/test$i 2>&1`.to_i
+        assert_equal `du -sb /tmp/host1-sda/bla/bla/test$i 2>&1`.to_i, `du -sb /tmp/host$i-sd$j/bla/bla/test$i 2>&1`.to_i
       end
     end
         
@@ -91,7 +97,7 @@ class DaemonTest < Test::Unit::TestCase
     item_storage.status = 'delete'
     item_storage.save
     sleep 2
-    assert_equal 0, `du -b /tmp/host1-sdc/bla/bla/test1 2>&1`.to_i
+    assert_equal 0, `du -sb /tmp/host1-sdc/bla/bla/test1 2>&1`.to_i
     
     assert_equal @@errors_count, FC::Error.where.count, "new errors in errors table"
   end

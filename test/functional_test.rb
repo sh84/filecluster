@@ -6,10 +6,16 @@ class FunctionalTest < Test::Unit::TestCase
       # tmp fake storages dirs
       `rm -rf /tmp/host*-sd*`
       `mkdir -p /tmp/host1-sda/ /tmp/host2-sda/`
+      `rm -rf /tmp/fc_test_dir`
+      `mkdir -p /tmp/fc_test_dir`
       
       # test file to copy
       @@test_file_path = '/tmp/fc_test_file'
       `dd if=/dev/urandom of=#{@@test_file_path} bs=100K count=1 2>&1`
+      @@test_dir_path = '/tmp/fc_test_dir'
+      `mkdir -p #{@@test_dir_path}/aaa #{@@test_dir_path}/bbb`
+      `cp #{@@test_file_path} #{@@test_dir_path}/aaa/test1`
+      `cp #{@@test_file_path} #{@@test_dir_path}/bbb/test2`
       
       @@storages = []
       @@storages << FC::Storage.new(:name => 'host1-sda', :host => 'host1', :path => '/tmp/host1-sda/', :size_limit => 1000000, :check_time => Time.new.to_i)
@@ -31,7 +37,9 @@ class FunctionalTest < Test::Unit::TestCase
       FC::DB.connect.query("DELETE FROM items")
       FC::DB.connect.query("DELETE FROM policies")
       FC::DB.connect.query("DELETE FROM storages")
-      `rm -rf /tmp/host1-sda /tmp/host2-sda`
+      `rm -rf /tmp/host*-sd*`
+      `rm -rf #{@@test_file_path}`
+      `rm -rf #{@@test_dir_path}`
     end
   end
   
@@ -43,8 +51,22 @@ class FunctionalTest < Test::Unit::TestCase
   should "item create_from_local successful" do
     assert_nothing_raised { @item = FC::Item.create_from_local(@@test_file_path, '/bla/bla/test1', @@policies[0], {:tag => 'test'}) }
     assert_kind_of FC::Item, @item
-    assert_equal `du -b /tmp/host1-sda/bla/bla/test1 2>&1`.to_i, `du -b #{@@test_file_path} 2>&1`.to_i
-    assert_equal `du -b /tmp/host1-sda/bla/bla/test1 2>&1`.to_i, @item.size
+    assert_equal `du -sb /tmp/host1-sda/bla/bla/test1 2>&1`.to_i, `du -sb #{@@test_file_path} 2>&1`.to_i
+    assert_equal `du -sb /tmp/host1-sda/bla/bla/test1 2>&1`.to_i, @item.size
+    assert_equal 'ready', @item.status
+    item_storages = @item.get_item_storages
+    assert_equal 1, item_storages.count
+    item_storage = item_storages.first
+    assert_equal 'ready', item_storage.status
+    assert_equal 'host1-sda', item_storage.storage_name
+  end
+  
+  should "item create_from_local dir successful" do
+    assert_nothing_raised { @item = FC::Item.create_from_local(@@test_dir_path, '/bla/bla/test_dir', @@policies[0], {:tag => 'test_dir'}) }
+    assert_kind_of FC::Item, @item
+    assert_equal true, @item.dir?
+    assert_equal `du -sb /tmp/host1-sda/bla/bla/test_dir 2>&1`.to_i, `du -sb #{@@test_dir_path} 2>&1`.to_i
+    assert_equal `du -sb /tmp/host1-sda/bla/bla/test_dir 2>&1`.to_i, @item.size
     assert_equal 'ready', @item.status
     item_storages = @item.get_item_storages
     assert_equal 1, item_storages.count
