@@ -84,4 +84,11 @@ class PolicyTest < Test::Unit::TestCase
     @@storages[0].save
     assert_equal 'rec2-sda', @@policy.get_proper_storage_for_copy(1, 1).name, 'storage by copy_id'
   end
+  
+  should "filter_by_host" do
+    FC::Storage.stubs(:curr_host).returns('rec2')
+    FC::Policy.new(:create_storages => 'rec3-sda,rec2-sda', :copy_storages => 'rec1-sda,rec2-sda', :copies => 1, :name => 'policy 2').save
+    FC::Policy.new(:create_storages => 'rec1-sda,rec3-sda', :copy_storages => 'rec1-sda,rec2-sda', :copies => 1, :name => 'policy 3').save
+    assert_same_elements ['policy 1', 'policy 2'], FC::Policy.filter_by_host.map{|p| p.name}
+  end
 end

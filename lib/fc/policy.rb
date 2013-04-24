@@ -9,6 +9,13 @@ module FC
     end
     @storages_cache_time = 20 # ttl for storages cache
     
+    def self.filter_by_host(host = nil)
+      host = FC::Storage.curr_host unless host
+      self.where.select do |policy|
+        policy.get_create_storages.detect{|storage| storage.host == host}
+      end
+    end
+    
     def get_create_storages
       return @create_storages_cache if @create_storages_cache && Time.new.to_i - @get_create_storages_time.to_i < self.class.storages_cache_time
       @get_create_storages_time = Time.new.to_i
