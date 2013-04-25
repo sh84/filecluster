@@ -42,7 +42,7 @@ module FC
       storages = get_copy_storages
       start_storage_index = nil
       storages.each_with_index do |s, i|
-        start_storage_index = i if copy_id.to_i == s.copy_id.to_i
+        start_storage_index = i if copy_id.to_i == s.copy_id.to_i && !exclude.include?(s.name)
       end
       storages = storages[start_storage_index..-1]+storages[0..start_storage_index-1] if storages.size > 0 && start_storage_index
       storages = storages.select do |storage|
