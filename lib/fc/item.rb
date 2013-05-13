@@ -113,5 +113,11 @@ module FC
     def get_item_storages
       FC::ItemStorage.where("item_id = #{id}")
     end
+    
+    def get_available_storages
+      r = FC::DB.connect.query("SELECT st.* FROM #{FC::Storage.table_name} as st, #{FC::ItemStorage.table_name} as ist WHERE 
+        ist.item_id = #{id} AND ist.status='ready' AND ist.storage_name = st.name")
+      r.map{|data| FC::Storage.create_from_fiels(data)}.select {|storage| storage.up? }
+    end
   end
 end

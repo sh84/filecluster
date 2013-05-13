@@ -11,7 +11,7 @@ class ItemTest < Test::Unit::TestCase
       @@storages << FC::Storage.new(:name => 'rec2-sda', :host => 'rec2')
       @@item_storages = @@storages.map do |storage|
         storage.save
-        item_storage = FC::ItemStorage.new(:item_id => @@item.id, :storage_name => storage.name)
+        item_storage = FC::ItemStorage.new(:item_id => @@item.id, :storage_name => storage.name, :status => 'ready')
         item_storage.save
         item_storage
       end
@@ -21,10 +21,6 @@ class ItemTest < Test::Unit::TestCase
       FC::DB.connect.query("DELETE FROM items")
       FC::DB.connect.query("DELETE FROM storages")
     end
-  end 
-
-  should "get_item_storages" do
-    assert_same_elements @@item_storages.map(&:id), @@item.get_item_storages.map(&:id)
   end
   
   should "create_from_local" do
@@ -46,4 +42,13 @@ class ItemTest < Test::Unit::TestCase
     end
   end
   
+  should "get_item_storages" do
+    assert_same_elements @@item_storages.map(&:id), @@item.get_item_storages.map(&:id)
+  end
+  
+  should "item get_available_storages" do
+    @@storages[0].update_check_time
+    assert_equal 1, @@item.get_available_storages.count
+    assert_equal @@storages[0].name, @@item.get_available_storages.first.name
+  end
 end
