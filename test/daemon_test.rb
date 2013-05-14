@@ -98,7 +98,10 @@ class DaemonTest < Test::Unit::TestCase
     item_storage.save
     sleep 2
     assert_equal 0, `du -sb /tmp/host1-sdc/bla/bla/test1 2>&1`.to_i
-    
     assert_equal @@errors_count, FC::Error.where.count, "new errors in errors table"
+    
+    @item1.mark_deleted
+    sleep 2
+    assert_raise(RuntimeError, 'Item not deleted after mark_deleted') {@item1.reload}
   end
 end

@@ -16,9 +16,9 @@ class GlobalDaemonThread < BaseThread
       end
       
       make_item_copies
-      
+      delete_deleted_items
       #периодическая проверка на item со статусом delete, последним обновлением дольше суток (NOW - time > 86400) и без связанных is - удаление таких из базы
-      #периодически удалять (проставлять статус delete) для лиших is (число копий больше необходимого)
+      #TODO: периодически удалять (проставлять статус delete) для лиших is (число копий больше необходимого)
     end
   end
   
@@ -55,6 +55,18 @@ class GlobalDaemonThread < BaseThread
         error 'No available storage', :item_id => row['item_id'] unless storage
         FC::Item.new(:id => row['item_id']).make_item_storage(storage, 'copy')
       end
+    end
+  end
+  
+  def delete_deleted_items
+    $log.debug("GlobalDaemonThread: delete_deleted_items")
+    
+    r = FC::DB.connect.query("SELECT i.id FROM #{FC::Item.table_name} as i LEFT JOIN #{FC::ItemStorage.table_name} as ist ON i.id=ist.item_id WHERE i.status = 'delete' AND ist.id IS NULL")
+    ids = r.map{|row| row['id']}
+    if ids.count > 0
+      ids = ids.join(',')
+      FC::DB.connect.query("DELETE FROM #{FC::Item.table_name} WHERE id in (#{ids})")
+      $log.info("GlobalDaemonThread: delete items #{ids}")
     end
   end
 end

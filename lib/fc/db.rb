@@ -161,7 +161,7 @@ module FC
           item_id int DEFAULT NULL,
           item_storage_id int DEFAULT NULL,
           host varchar(255) DEFAULT NULL,
-          message varchar(255) DEFAULT NULL,
+          message text DEFAULT NULL,
           time int DEFAULT NULL,
           PRIMARY KEY (id), KEY (item_id), KEY (item_storage_id), KEY (host), KEY (time)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
