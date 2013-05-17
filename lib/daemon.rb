@@ -69,6 +69,7 @@ def update_tasks
     $curr_task.map{|storage_name, task| ids << task[:item_storage].id if task && task[:action] == type}
       
     cond << "AND id not in (#{ids.join(',')})" if (ids.length > 0)
+    cond << "LIMIT 1000"
     FC::ItemStorage.where(cond).each do |item_storage|
       $tasks[item_storage.storage_name] = [] unless $tasks[item_storage.storage_name]
       $tasks[item_storage.storage_name] << {:action => type, :item_storage => item_storage}

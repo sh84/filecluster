@@ -16,6 +16,7 @@ class TaskThread < BaseThread
   end
   
   def make_delete(item_storage)
+    # TODO: не лазить в базу за item
     storage = $storages.detect{|s| s.name == item_storage.storage_name}
     item = FC::Item.find(item_storage.item_id)
     storage.delete_file(item.name)
