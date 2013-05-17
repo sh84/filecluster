@@ -29,6 +29,10 @@ class TaskThread < BaseThread
     storage = $storages.detect{|s| s.name == item_storage.storage_name}
     item = FC::Item.find(item_storage.item_id)
     src_item_storage = FC::ItemStorage.where("item_id = ? AND status = 'ready'", item.id).sample
+    unless src_item_storage
+      $log.info("Item ##{item.id} #{item.name} has no ready item_storage")
+      return nil 
+    end
     src_storage = $all_storages.detect{|s| s.name == src_item_storage.storage_name}
     $log.debug("Copy from #{src_storage.name} to #{storage.name} #{storage.path}#{item.name}")
     item.copy_item_storage(src_storage, storage, item_storage)
