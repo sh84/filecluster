@@ -8,12 +8,12 @@ require 'filecluster'
 require 'utils'
 require 'daemon'
 
-$storages = []
-$tasks = {}           # tasks by storage name
-$curr_task = {}       # task by storage name
-$tasks_threads = {}   # threads by storage name
-$check_threads = {}   # threads by storage name
-$exit_signal = false 
+$storages       = []          # storages on current host
+$tasks          = {}          # tasks by storage name
+$curr_tasks     = []          # current tasks
+$tasks_threads  = {}          # threads by storage name
+$check_threads  = {}          # threads by storage name
+$exit_signal    = false 
 $global_daemon_thread = nil
 
 default_db_config = File.expand_path(File.dirname(__FILE__))+'/db.yml'

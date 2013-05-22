@@ -66,7 +66,7 @@ def update_tasks
     cond = "storage_name in (#{storages_names}) AND status='#{type.to_s}'"
     ids = $tasks.map{|storage_name, storage_tasks| storage_tasks.select{|task| task[:action] == type}}.
       flatten.map{|task| task[:item_storage].id}
-    $curr_task.map{|storage_name, task| ids << task[:item_storage].id if task && task[:action] == type}
+    ids += $curr_tasks.select{|task| task[:action] == type}
       
     cond << "AND id not in (#{ids.join(',')})" if (ids.length > 0)
     cond << "LIMIT 1000"
@@ -84,10 +84,17 @@ end
 def run_tasks
   $log.debug('Run tasks')
   $storages.each do |storage|
-    thread = $tasks_threads[storage.name]
-    if (!thread || !thread.alive?) && $tasks[storage.name] && $tasks[storage.name].size > 0
+    $tasks_threads[storage.name] = [] unless $tasks_threads[storage.name]
+    $tasks_threads[storage.name].delete_if {|thread| !thread.alive?}
+    tasks_count = $tasks[storage.name] ? $tasks[storage.name].size : 0
+    threads_count = $tasks_threads[storage.name].count
+    # 10 tasks per thread, maximum 3 tasks
+    run_threads_count = (tasks_count/10.0).ceil - threads_count
+    run_threads_count = 3 if run_threads_count > 3
+    $log.debug("tasks_count: #{tasks_count}, threads_count: #{threads_count}, run_threads_count: #{run_threads_count}")
+    run_threads_count.times do
       $log.debug("spawn TaskThread for #{storage.name}") 
-      $tasks_threads[storage.name] = TaskThread.new(storage.name)
+      $tasks_threads[storage.name] << TaskThread.new(storage.name)
     end
   end
 end
