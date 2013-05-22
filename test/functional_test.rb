@@ -33,10 +33,10 @@ class FunctionalTest < Test::Unit::TestCase
       @@policies.each { |policy| policy.save}
     end
     def shutdown
-      FC::DB.connect.query("DELETE FROM items_storages")
-      FC::DB.connect.query("DELETE FROM items")
-      FC::DB.connect.query("DELETE FROM policies")
-      FC::DB.connect.query("DELETE FROM storages")
+      FC::DB.query("DELETE FROM items_storages")
+      FC::DB.query("DELETE FROM items")
+      FC::DB.query("DELETE FROM policies")
+      FC::DB.query("DELETE FROM storages")
       `rm -rf /tmp/host*-sd*`
       `rm -rf #{@@test_file_path}`
       `rm -rf #{@@test_dir_path}`

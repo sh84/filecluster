@@ -34,7 +34,7 @@ module FC
       if item
         if options[:replace] || storage
           # mark delete item_storages on replace
-          FC::DB.connect.query("UPDATE #{FC::ItemStorage.table_name} SET status='delete' WHERE item_id = #{item.id}") if options[:replace] && !storage
+          FC::DB.query("UPDATE #{FC::ItemStorage.table_name} SET status='delete' WHERE item_id = #{item.id}") if options[:replace] && !storage
           # replace all fields
           item_params.each{|key, val| item.send("#{key}=", val)}
         else
@@ -101,7 +101,7 @@ module FC
     
     # mark items_storages for delete
     def mark_deleted
-      FC::DB.connect.query("UPDATE #{FC::ItemStorage.table_name} SET status='delete' WHERE item_id = #{id}")
+      FC::DB.query("UPDATE #{FC::ItemStorage.table_name} SET status='delete' WHERE item_id = #{id}")
       self.status = 'delete'
       save
     end
@@ -115,7 +115,7 @@ module FC
     end
     
     def get_available_storages
-      r = FC::DB.connect.query("SELECT st.* FROM #{FC::Storage.table_name} as st, #{FC::ItemStorage.table_name} as ist WHERE 
+      r = FC::DB.query("SELECT st.* FROM #{FC::Storage.table_name} as st, #{FC::ItemStorage.table_name} as ist WHERE 
         ist.item_id = #{id} AND ist.status='ready' AND ist.storage_name = st.name")
       r.map{|data| FC::Storage.create_from_fiels(data)}.select {|storage| storage.up? }
     end

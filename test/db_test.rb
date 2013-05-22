@@ -34,10 +34,10 @@ class DbTest < Test::Unit::TestCase
       @@item_storages_ids = item_storages.map{|is| is.save; is.id }
     end
     def shutdown
-      FC::DB.connect.query("DELETE FROM items_storages")
-      FC::DB.connect.query("DELETE FROM items")
-      FC::DB.connect.query("DELETE FROM policies")
-      FC::DB.connect.query("DELETE FROM storages")
+      FC::DB.query("DELETE FROM items_storages")
+      FC::DB.query("DELETE FROM items")
+      FC::DB.query("DELETE FROM policies")
+      FC::DB.query("DELETE FROM storages")
     end
   end
   def setup

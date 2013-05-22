@@ -3,7 +3,7 @@ require 'helper'
 class BaseTest < Test::Unit::TestCase
   class << self
     def shutdown
-      FC::DB.connect.query("DELETE FROM items")
+      FC::DB.query("DELETE FROM items")
     end
   end
   

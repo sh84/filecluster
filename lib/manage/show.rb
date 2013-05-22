@@ -3,7 +3,7 @@ def show_current_host
 end
 
 def show_global_daemon
-  r = FC::DB.connect.query("SELECT #{FC::DB.prefix}vars.*, UNIX_TIMESTAMP() as curr_time FROM #{FC::DB.prefix}vars WHERE name='global_daemon_host'").first
+  r = FC::DB.query("SELECT #{FC::DB.prefix}vars.*, UNIX_TIMESTAMP() as curr_time FROM #{FC::DB.prefix}vars WHERE name='global_daemon_host'").first
   if r 
     puts "Global daemon run on #{r['val']}\nLast run #{r['curr_time']-r['time']} seconds ago."
   else
@@ -31,7 +31,7 @@ def show_host_info
   else
     puts "Info for host #{host}"
     storages.each do |storage|
-      counts = FC::DB.connect.query("SELECT status, count(*) as cnt FROM #{FC::ItemStorage.table_name} WHERE storage_name='#{Mysql2::Client.escape(storage.name)}' GROUP BY status")
+      counts = FC::DB.query("SELECT status, count(*) as cnt FROM #{FC::ItemStorage.table_name} WHERE storage_name='#{Mysql2::Client.escape(storage.name)}' GROUP BY status")
       str = "#{storage.name} #{size_to_human(storage.size)}/#{size_to_human(storage.size_limit)} "
       str += "#{storage.up? ? colorize_string('UP', :green) : colorize_string('DOWN', :red)}"
       str += " #{storage.check_time_delay} seconds ago" if storage.check_time
@@ -46,17 +46,17 @@ end
 
 def show_items_info
   puts "Items by status:"
-  counts = FC::DB.connect.query("SELECT status, count(*) as cnt FROM #{FC::Item.table_name} WHERE 1 GROUP BY status")
+  counts = FC::DB.query("SELECT status, count(*) as cnt FROM #{FC::Item.table_name} WHERE 1 GROUP BY status")
   counts.each do |r|
     puts "   #{r['status']}: #{r['cnt']}"
   end
   puts "Items storages by status:"
-  counts = FC::DB.connect.query("SELECT status, count(*) as cnt FROM #{FC::ItemStorage.table_name} WHERE 1 GROUP BY status")
+  counts = FC::DB.query("SELECT status, count(*) as cnt FROM #{FC::ItemStorage.table_name} WHERE 1 GROUP BY status")
   counts.each do |r|
     puts "   #{r['status']}: #{r['cnt']}"
   end
-  count = FC::DB.connect.query("SELECT count(*) as cnt FROM #{FC::Item.table_name} as i, #{FC::Policy.table_name} as p WHERE i.policy_id = p.id AND i.copies > 0 AND i.copies < p.copies AND i.status = 'ready'").first['cnt']
+  count = FC::DB.query("SELECT count(*) as cnt FROM #{FC::Item.table_name} as i, #{FC::Policy.table_name} as p WHERE i.policy_id = p.id AND i.copies > 0 AND i.copies < p.copies AND i.status = 'ready'").first['cnt']
   puts "Items to copy: #{count}"
-  count = FC::DB.connect.query("SELECT count(*) as cnt FROM #{FC::Item.table_name} as i, #{FC::Policy.table_name} as p WHERE i.policy_id = p.id AND i.copies > p.copies AND i.status = 'ready'").first['cnt']
+  count = FC::DB.query("SELECT count(*) as cnt FROM #{FC::Item.table_name} as i, #{FC::Policy.table_name} as p WHERE i.policy_id = p.id AND i.copies > p.copies AND i.status = 'ready'").first['cnt']
   puts "Items to delete: #{count}"
 end

@@ -35,6 +35,19 @@ module FC
       end
     end
     
+    # connect.query with deadlock solution
+    def self.query(sql)
+      FC::DB.connect.query(sql)
+    rescue Mysql2::Error => e
+      if e.message.match('Deadlock found when trying to get lock')
+        puts "Deadlock"
+        sleep 0.1
+        self.query(sql)
+      else 
+        raise e
+      end
+    end
+    
     def DB.init_db
       FC::DB.connect.query(%{
         CREATE TABLE #{@prefix}items (

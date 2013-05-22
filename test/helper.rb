@@ -10,8 +10,8 @@ TEST_USER     = 'root'
 TEST_PASSWORD = ''
 
 FC::DB.connect_by_config(:username => TEST_USER, :password => TEST_PASSWORD)
-FC::DB.connect.query("DROP DATABASE IF EXISTS #{TEST_DATABASE}")
-FC::DB.connect.query("CREATE DATABASE #{TEST_DATABASE}")
-FC::DB.connect.query("USE #{TEST_DATABASE}")
+FC::DB.query("DROP DATABASE IF EXISTS #{TEST_DATABASE}")
+FC::DB.query("CREATE DATABASE #{TEST_DATABASE}")
+FC::DB.query("USE #{TEST_DATABASE}")
 FC::DB.init_db
 FC::DB.options[:database] = TEST_DATABASE

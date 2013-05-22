@@ -17,12 +17,12 @@ end
 
 def run_global_daemon(timeout)
   $log.debug('Run global daemon check')
-  r = FC::DB.connect.query("SELECT #{FC::DB.prefix}vars.*, UNIX_TIMESTAMP() as curr_time FROM #{FC::DB.prefix}vars WHERE name='global_daemon_host'").first
+  r = FC::DB.query("SELECT #{FC::DB.prefix}vars.*, UNIX_TIMESTAMP() as curr_time FROM #{FC::DB.prefix}vars WHERE name='global_daemon_host'").first
   if !r || r['curr_time'].to_i - r['time'].to_i > timeout
     $log.debug('Set global daemon host to current')
-    FC::DB.connect.query("REPLACE #{FC::DB.prefix}vars SET val='#{FC::Storage.curr_host}', name='global_daemon_host'")
+    FC::DB.query("REPLACE #{FC::DB.prefix}vars SET val='#{FC::Storage.curr_host}', name='global_daemon_host'")
     sleep 1
-    r = FC::DB.connect.query("SELECT #{FC::DB.prefix}vars.*, UNIX_TIMESTAMP() as curr_time FROM #{FC::DB.prefix}vars WHERE name='global_daemon_host'").first
+    r = FC::DB.query("SELECT #{FC::DB.prefix}vars.*, UNIX_TIMESTAMP() as curr_time FROM #{FC::DB.prefix}vars WHERE name='global_daemon_host'").first
   end
   if r['val'] == FC::Storage.curr_host
     if !$global_daemon_thread || !$global_daemon_thread.alive?

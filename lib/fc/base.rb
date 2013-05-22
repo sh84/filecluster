@@ -34,7 +34,7 @@ module FC
     
     # get element by id
     def self.find(id)
-      r = FC::DB.connect.query("SELECT * FROM #{self.table_name} WHERE id=#{id.to_i}")
+      r = FC::DB.query("SELECT * FROM #{self.table_name} WHERE id=#{id.to_i}")
       raise "Record not found (#{self.table_name}.id=#{id})" if r.count == 0
       self.create_from_fiels(r.first)
     end
@@ -43,7 +43,7 @@ module FC
     def self.where(cond = "1", *params)
       i = -1
       sql = "SELECT * FROM #{self.table_name} WHERE #{cond.gsub('?'){i+=1; "'#{Mysql2::Client.escape(params[i].to_s)}'"}}"
-      r = FC::DB.connect.query(sql)
+      r = FC::DB.query(sql)
       r.map{|data| self.create_from_fiels(data)}
     end
     
@@ -63,7 +63,7 @@ module FC
       if fields.length > 0
         sql << fields.join(',')
         sql << " WHERE id=#{@id.to_i}" if @id
-        FC::DB.connect.query(sql)
+        FC::DB.query(sql)
         @id = FC::DB.connect.last_id unless @id
         self.class.table_fields.each do |key|
           @database_fields[key] = self.send(key)
@@ -81,7 +81,7 @@ module FC
 
     # delete object from DB
     def delete
-      FC::DB.connect.query("DELETE FROM #{self.class.table_name} WHERE id=#{@id.to_i}") if @id
+      FC::DB.query("DELETE FROM #{self.class.table_name} WHERE id=#{@id.to_i}") if @id
     end
     
   end

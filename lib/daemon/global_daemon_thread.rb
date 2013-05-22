@@ -6,9 +6,9 @@ class GlobalDaemonThread < BaseThread
       sleep timeout.to_f/2
       exit if $exit_signal
       
-      r = FC::DB.connect.query("SELECT #{FC::DB.prefix}vars.*, UNIX_TIMESTAMP() as curr_time FROM #{FC::DB.prefix}vars WHERE name='global_daemon_host'").first
+      r = FC::DB.query("SELECT #{FC::DB.prefix}vars.*, UNIX_TIMESTAMP() as curr_time FROM #{FC::DB.prefix}vars WHERE name='global_daemon_host'").first
       if r['val'] == FC::Storage.curr_host
-        FC::DB.connect.query("UPDATE #{FC::DB.prefix}vars SET val='#{FC::Storage.curr_host}' WHERE name='global_daemon_host'")
+        FC::DB.query("UPDATE #{FC::DB.prefix}vars SET val='#{FC::Storage.curr_host}' WHERE name='global_daemon_host'")
       else
         $log.info("Exit from GlobalDaemonThread: global daemon already running on #{r['val']}")
         FC::DB.close
@@ -40,7 +40,7 @@ class GlobalDaemonThread < BaseThread
     sql = "SELECT i.id as item_id, i.size, i.copies as item_copies, GROUP_CONCAT(ist.storage_name ORDER BY ist.id) as storages, p.id as policy_id, p.copies as policy_copies "+
       "FROM #{FC::Item.table_name} as i, #{FC::Policy.table_name} as p, #{FC::ItemStorage.table_name} as ist WHERE "+
       "i.policy_id = p.id AND ist.item_id = i.id AND i.copies > 0 AND i.copies < p.copies AND i.status = 'ready' AND ist.status <> 'delete' GROUP BY i.id LIMIT 1000"
-    r = FC::DB.connect.query(sql)
+    r = FC::DB.query(sql)
     r.each do |row|
       $log.info("GlobalDaemonThread: new item_storage for item #{row['item_id']}")
       item_storages = row['storages'].split(',')
@@ -61,11 +61,11 @@ class GlobalDaemonThread < BaseThread
   def delete_deleted_items
     $log.debug("GlobalDaemonThread: delete_deleted_items")
     
-    r = FC::DB.connect.query("SELECT i.id FROM #{FC::Item.table_name} as i LEFT JOIN #{FC::ItemStorage.table_name} as ist ON i.id=ist.item_id WHERE i.status = 'delete' AND ist.id IS NULL")
+    r = FC::DB.query("SELECT i.id FROM #{FC::Item.table_name} as i LEFT JOIN #{FC::ItemStorage.table_name} as ist ON i.id=ist.item_id WHERE i.status = 'delete' AND ist.id IS NULL")
     ids = r.map{|row| row['id']}
     if ids.count > 0
       ids = ids.join(',')
-      FC::DB.connect.query("DELETE FROM #{FC::Item.table_name} WHERE id in (#{ids})")
+      FC::DB.query("DELETE FROM #{FC::Item.table_name} WHERE id in (#{ids})")
       $log.info("GlobalDaemonThread: delete items #{ids}")
     end
   end

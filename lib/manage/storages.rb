@@ -14,7 +14,7 @@ end
 
 def storages_show
   if storage = find_storage
-    count = FC::DB.connect.query("SELECT count(*) as cnt FROM #{FC::ItemStorage.table_name} WHERE storage_name='#{Mysql2::Client.escape(storage.name)}'").first['cnt']
+    count = FC::DB.query("SELECT count(*) as cnt FROM #{FC::ItemStorage.table_name} WHERE storage_name='#{Mysql2::Client.escape(storage.name)}'").first['cnt']
     puts %Q{Storage
   Name:           #{storage.name}
   Host:           #{storage.host} 

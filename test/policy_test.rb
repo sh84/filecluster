@@ -14,8 +14,8 @@ class PolicyTest < Test::Unit::TestCase
       @@policy.save
     end
     def shutdown
-      FC::DB.connect.query("DELETE FROM policies")
-      FC::DB.connect.query("DELETE FROM storages")
+      FC::DB.query("DELETE FROM policies")
+      FC::DB.query("DELETE FROM storages")
     end
   end 
 

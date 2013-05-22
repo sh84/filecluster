@@ -11,7 +11,7 @@ end
 
 def policies_show
   if policy = find_policy
-    count = FC::DB.connect.query("SELECT count(*) as cnt FROM #{FC::Item.table_name} WHERE policy_id = #{policy.id}").first['cnt']
+    count = FC::DB.query("SELECT count(*) as cnt FROM #{FC::Item.table_name} WHERE policy_id = #{policy.id}").first['cnt']
     puts %Q{Policy
   ID:               #{policy.id}
   Name:             #{policy.name}

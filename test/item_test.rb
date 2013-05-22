@@ -17,9 +17,9 @@ class ItemTest < Test::Unit::TestCase
       end
     end
     def shutdown
-      FC::DB.connect.query("DELETE FROM items_storages")
-      FC::DB.connect.query("DELETE FROM items")
-      FC::DB.connect.query("DELETE FROM storages")
+      FC::DB.query("DELETE FROM items_storages")
+      FC::DB.query("DELETE FROM items")
+      FC::DB.query("DELETE FROM storages")
     end
   end
   
