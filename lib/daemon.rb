@@ -66,7 +66,7 @@ def update_tasks
     cond = "storage_name in (#{storages_names}) AND status='#{type.to_s}'"
     ids = $tasks.map{|storage_name, storage_tasks| storage_tasks.select{|task| task[:action] == type}}.
       flatten.map{|task| task[:item_storage].id}
-    ids += $curr_tasks.select{|task| task[:action] == type}
+    ids += $curr_tasks.select{|task| task[:action] == type}.map{|task| task[:item_storage].id}
       
     cond << "AND id not in (#{ids.join(',')})" if (ids.length > 0)
     cond << "LIMIT 1000"
