@@ -71,9 +71,11 @@ def update_tasks
     cond << "AND id not in (#{ids.join(',')})" if (ids.length > 0)
     cond << "LIMIT 1000"
     FC::ItemStorage.where(cond).each do |item_storage|
-      $tasks[item_storage.storage_name] = [] unless $tasks[item_storage.storage_name]
-      $tasks[item_storage.storage_name] << {:action => type, :item_storage => item_storage}
-      $log.debug("task add: type=#{type}, item_storage=#{item_storage.id}")
+      unless ids.include?(item_storage.id)
+        $tasks[item_storage.storage_name] = [] unless $tasks[item_storage.storage_name]
+        $tasks[item_storage.storage_name] << {:action => type, :item_storage => item_storage} 
+        $log.debug("task add: type=#{type}, item_storage=#{item_storage.id}")
+      end
     end
   end
   
