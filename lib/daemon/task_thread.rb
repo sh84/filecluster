@@ -18,7 +18,6 @@ class TaskThread < BaseThread
   
   def make_delete(task)
     item_storage = task[:item_storage]
-    # TODO: не лазить в базу за item
     storage = $storages.detect{|s| s.name == item_storage.storage_name}
     item = FC::Item.find(item_storage.item_id)
     storage.delete_file(item.name)
@@ -30,9 +29,9 @@ class TaskThread < BaseThread
   
   def make_copy(task)
     item_storage = task[:item_storage]
-    # TODO: не лазить в базу за item, item_storages - перенести на стадию подготовки task-а
     storage = $storages.detect{|s| s.name == item_storage.storage_name}
     item = FC::Item.find(item_storage.item_id)
+    return nil unless item && item.status == 'ready'
     src_item_storage = FC::ItemStorage.where("item_id = ? AND status = 'ready'", item.id).sample
     unless src_item_storage
       $log.info("Item ##{item.id} #{item.name} has no ready item_storage")

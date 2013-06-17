@@ -16,8 +16,9 @@ class GlobalDaemonThread < BaseThread
       end
       
       make_item_copies
+      make_deleted_error_items_storages
+      make_deleted_error_items
       delete_deleted_items
-      #периодическая проверка на item со статусом delete, последним обновлением дольше суток (NOW - time > 86400) и без связанных is - удаление таких из базы
       #TODO: периодически удалять (проставлять статус delete) для лиших is (число копий больше необходимого)
     end
   end
@@ -52,8 +53,11 @@ class GlobalDaemonThread < BaseThread
         src_storage = all_storages.detect{|s| item_storages.first == s.name}
         policy = all_policies.detect{|p| row['policy_id'] == p.id}
         storage = policy.get_proper_storage_for_copy(row['size'], src_storage.copy_id, item_storages) if src_storage && policy 
-        error 'No available storage', :item_id => row['item_id'] unless storage
-        FC::Item.new(:id => row['item_id']).make_item_storage(storage, 'copy')
+        if storage
+          FC::Item.new(:id => row['item_id']).make_item_storage(storage, 'copy')
+        else
+          error 'No available storage', :item_id => row['item_id']
+        end
       end
     end
   end
@@ -68,5 +72,15 @@ class GlobalDaemonThread < BaseThread
       FC::DB.query("DELETE FROM #{FC::Item.table_name} WHERE id in (#{ids})")
       $log.info("GlobalDaemonThread: delete items #{ids}")
     end
+  end
+  
+  def make_deleted_error_items_storages
+    $log.debug("GlobalDaemonThread: make_deleted_error_items_storages")
+    FC::DB.query("UPDATE #{FC::ItemStorage.table_name} SET status = 'delete' WHERE status = 'error' AND time < #{Time.new.to_i - 86400}")
+  end
+  
+  def make_deleted_error_items
+    $log.debug("GlobalDaemonThread: make_deleted_error_items")
+    FC::DB.query("UPDATE #{FC::Item.table_name} SET status = 'delete' WHERE status = 'error' AND time < #{Time.new.to_i - 86400}")
   end
 end

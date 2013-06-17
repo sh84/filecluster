@@ -42,7 +42,7 @@ FC::DB.connect_by_config(db_options.merge(:reconnect => true, :multi_threads => 
 $log.info('Connected to database')
 
 def quit_on_quit
-  $log.info('Exit signal')
+  Thread.new { $log.info('Exit signal') }.join
   $exit_signal = true
 end
 trap("TERM") {quit_on_quit}
