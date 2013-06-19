@@ -6,11 +6,10 @@ class GlobalDaemonThread < BaseThread
       sleep timeout.to_f/2
       exit if $exit_signal
       
-      r = FC::DB.query("SELECT #{FC::DB.prefix}vars.*, UNIX_TIMESTAMP() as curr_time FROM #{FC::DB.prefix}vars WHERE name='global_daemon_host'").first
-      if r['val'] == FC::Storage.curr_host
-        FC::DB.query("UPDATE #{FC::DB.prefix}vars SET val='#{FC::Storage.curr_host}' WHERE name='global_daemon_host'")
+      if FC::Var.get('global_daemon_host') == FC::Storage.curr_host
+        FC::Var.set('global_daemon_host', FC::Storage.curr_host)
       else
-        $log.info("Exit from GlobalDaemonThread: global daemon already running on #{r['val']}")
+        $log.info("Exit from GlobalDaemonThread: global daemon already running on #{FC::Var.get('global_daemon_host')}")
         FC::DB.close
         exit
       end

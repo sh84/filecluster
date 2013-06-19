@@ -48,7 +48,11 @@ module FC
       end
     end
     
-    def DB.init_db
+    def self.server_time
+      FC::DB.query("SELECT UNIX_TIMESTAMP() as curr_time").first['curr_time'].to_i
+    end
+    
+    def self.init_db
       FC::DB.connect.query(%{
         CREATE TABLE #{@prefix}items (
           id int NOT NULL AUTO_INCREMENT,
