@@ -37,9 +37,10 @@ class GlobalDaemonThread < BaseThread
       end
     end
     
+    limit = FC::Var.get('daemon_global_tasks_group_limit', 1000).to_i
     sql = "SELECT i.id as item_id, i.size, i.copies as item_copies, GROUP_CONCAT(ist.storage_name ORDER BY ist.id) as storages, p.id as policy_id, p.copies as policy_copies "+
       "FROM #{FC::Item.table_name} as i, #{FC::Policy.table_name} as p, #{FC::ItemStorage.table_name} as ist WHERE "+
-      "i.policy_id = p.id AND ist.item_id = i.id AND i.copies > 0 AND i.copies < p.copies AND i.status = 'ready' AND ist.status <> 'delete' GROUP BY i.id LIMIT 1000"
+      "i.policy_id = p.id AND ist.item_id = i.id AND i.copies > 0 AND i.copies < p.copies AND i.status = 'ready' AND ist.status <> 'delete' GROUP BY i.id LIMIT #{limit}"
     r = FC::DB.query(sql)
     r.each do |row|
       $log.info("GlobalDaemonThread: new item_storage for item #{row['item_id']}")
@@ -75,11 +76,13 @@ class GlobalDaemonThread < BaseThread
   
   def make_deleted_error_items_storages
     $log.debug("GlobalDaemonThread: make_deleted_error_items_storages")
-    FC::DB.query("UPDATE #{FC::ItemStorage.table_name} SET status = 'delete' WHERE status = 'error' AND time < #{Time.new.to_i - 86400}")
+    ttl = FC::Var.get('daemon_global_error_items_storages_ttl', 86400).to_i
+    FC::DB.query("UPDATE #{FC::ItemStorage.table_name} SET status = 'delete' WHERE status = 'error' AND time < #{Time.new.to_i - ttl}")
   end
   
   def make_deleted_error_items
     $log.debug("GlobalDaemonThread: make_deleted_error_items")
-    FC::DB.query("UPDATE #{FC::Item.table_name} SET status = 'delete' WHERE status = 'error' AND time < #{Time.new.to_i - 86400}")
+    ttl = FC::Var.get('daemon_global_error_items_ttl', 86400).to_i
+    FC::DB.query("UPDATE #{FC::Item.table_name} SET status = 'delete' WHERE status = 'error' AND time < #{Time.new.to_i - ttl}")
   end
 end

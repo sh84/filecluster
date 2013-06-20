@@ -17,9 +17,11 @@ class DaemonTest < Test::Unit::TestCase
       
       @@errors_count = FC::Error.where.count
       
+      FC::Var.set('daemon_cycle_time', 1)
+      FC::Var.set('daemon_global_wait_time', 1)
       @stotage_checks = 0
       Thread.new do
-        Open3.popen2e("#{daemon_bin} -c #{db_config_file} -l debug -t 1 -g 1 -h host1") do |stdin, stdout, t|
+        Open3.popen2e("#{daemon_bin} -c #{db_config_file} -l debug -h host1") do |stdin, stdout, t|
           @@pid = t.pid
           while line = stdout.readline
             @stotage_checks += 1 if line =~ /Finish stotage check/i
@@ -90,7 +92,8 @@ class DaemonTest < Test::Unit::TestCase
         assert_equal `du -sb /tmp/host1-sda/bla/bla/test$i 2>&1`.to_i, `du -sb /tmp/host$i-sd$j/bla/bla/test$i 2>&1`.to_i
       end
     end
-        
+    assert_equal @@errors_count, FC::Error.where.count, "new errors in errors table"
+    
     @@policy.copies = 2
     @@policy.save
     item_storage = FC::ItemStorage.where('item_id = ? AND storage_name = ?', @item1.id, 'host1-sdc').first
@@ -103,5 +106,8 @@ class DaemonTest < Test::Unit::TestCase
     @item1.mark_deleted
     sleep 2
     assert_raise(RuntimeError, 'Item not deleted after mark_deleted') {@item1.reload}
+    
+    # global task
+    # TODO
   end
 end

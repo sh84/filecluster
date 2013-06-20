@@ -189,12 +189,20 @@ module FC
         CREATE TABLE #{@prefix}vars (
           name varchar(255) DEFAULT NULL,
           val varchar(255) DEFAULT NULL,
+          descr text DEFAULT NULL,
           time int DEFAULT NULL,
           PRIMARY KEY (name)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
       })
       FC::DB.connect.query("CREATE TRIGGER fc_vars_before_insert BEFORE INSERT on #{@prefix}vars FOR EACH ROW BEGIN #{proc_time} END")
       FC::DB.connect.query("CREATE TRIGGER fc_vars_before_update BEFORE UPDATE on #{@prefix}vars FOR EACH ROW BEGIN #{proc_time} END")
+      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_cycle_time', val='30', descr='time between global daemon checks and storages available checks'")
+      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_wait_time', val='120', descr='time between runs global daemon if it does not running'")
+      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_tasks_group_limit', val='1000', descr='limit for select for tasks'")
+      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_error_items_ttl', val='86400', descr='ttl for items with error status before delete'")
+      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_error_items_storages_ttl', val='86400', descr='ttl for items_storages with error status before delete'")
+      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_tasks_per_thread', val='10', descr='tasks count for one task thread'")
+      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_tasks_threads_limit', val='3', descr='tasks threads count limit for one storage'")
     end
   end
 end

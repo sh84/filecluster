@@ -18,10 +18,8 @@ $global_daemon_thread = nil
 
 default_db_config = File.expand_path(File.dirname(__FILE__))+'/db.yml'
 descriptions = {
-  :config      => {:short => 'c',  :full => 'config',     :default => default_db_config, :text => "path to db.yml file, default #{default_db_config}"},
-  :log_level   => {:short => 'l',  :full => 'log_level',  :default => 'info', :text => 'log level (fatal, error, warn, info or debug), default info'},
-  :cycle_time  => {:short => 't',  :full => 'time',       :default => 30, :text => 'Time between checks database and storages available, default 30'},
-  :global_wait => {:short => 'g', :full => 'wait',       :default => 120, :text => 'Time between runs global daemon if it does not running, default 120'},
+  :config      => {:short => 'c',  :full => 'config',    :default => default_db_config, :text => "path to db.yml file, default #{default_db_config}"},
+  :log_level   => {:short => 'l',  :full => 'log_level', :default => 'info', :text => 'log level (fatal, error, warn, info or debug), default info'},
   :curr_host   => {:short => 'h', :full => 'host',       :default => FC::Storage.curr_host, :text => "Host for storages, default #{FC::Storage.curr_host}"}
 }
 desc = %q{Run FileCluster daemon.
@@ -59,12 +57,12 @@ while true do
     $log.info('Exit')
     exit
   else
-    run_global_daemon options[:global_wait].to_i
+    run_global_daemon
     update_storages
     storages_check
     update_tasks
     run_tasks
   end
   $log.debug('sleep')
-  sleep options[:cycle_time].to_i
+  sleep FC::Var.get('daemon_cycle_time', 30).to_i
 end
