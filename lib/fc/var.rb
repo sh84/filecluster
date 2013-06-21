@@ -9,7 +9,8 @@ module FC
     @all_vars = {}
     
     def self.set(name, val)
-      FC::DB.query("REPLACE #{FC::DB.prefix}vars SET val='#{Mysql2::Client.escape(val.to_s)}', name='#{Mysql2::Client.escape(name.to_s)}'")
+      FC::DB.query("UPDATE #{FC::DB.prefix}vars SET val='#{Mysql2::Client.escape(val.to_s)}' WHERE name='#{Mysql2::Client.escape(name.to_s)}'")
+      FC::DB.query("INSERT IGNORE INTO #{FC::DB.prefix}vars SET val='#{Mysql2::Client.escape(val.to_s)}', name='#{Mysql2::Client.escape(name.to_s)}'")
       @all_vars[name.to_s] = val.to_s
       @all_vars[name.to_sym] = val.to_s
     end

@@ -37,13 +37,21 @@ Command:
 }],
   'show' => [
     'show variable', 
-    %q{Usage: fc-manage [options] show <variable>
-Variable:
+    %q{Usage: fc-manage [options] show <command>
+Command:
    current_host        show current host
    global_daemon       show host and uptime where run global daemon
    errors [<count>]    show last count (default 10) errors
    host_info [<host>]  show info for host (default current host)
    items_info          show items statistics       
+}],
+  'var' => [
+    'show and change FC::Var', 
+    %q{Usage: fc-manage [options] var <command>
+Command:
+   list                show all FC::Var-s
+   show <variable>     show current value for variable   
+   change <variable>   change variable       
 }]
 }
 desc = %q{Get info and manage for storages, policies and items.
@@ -66,8 +74,7 @@ if ARGV.empty?
   exit
 end
 
-case command
-when 'help'
+if command == 'help'
   if !ARGV[1]
     puts $options['optparse']
   elsif commands_help[ARGV[1]]
@@ -75,31 +82,14 @@ when 'help'
   else
     puts "'#{command}' is not a fc-manage command. See 'fc-manage --help'."
   end
-when 'show'
-  if !ARGV[1]
-    puts "Need variable name. See 'fc-manage help show'."
-  elsif self.private_methods.member?("show_#{ARGV[1]}".to_sym)
-    send "show_#{ARGV[1]}"
-  else
-    puts "Unknown variable. See 'fc-manage help show'."
-  end
-when 'storages'
+elsif commands_help[command]
   if !ARGV[1]
     puts "Need command. See 'fc-manage help storages'."
-  elsif self.private_methods.member?("storages_#{ARGV[1]}".to_sym)
-    send "storages_#{ARGV[1]}"
+  elsif self.private_methods.member?("#{command}_#{ARGV[1]}".to_sym)
+    send "#{command}_#{ARGV[1]}"
   else
-    puts "Unknown command. See 'fc-manage help storages'."
-  end
-when 'policies'
-  if !ARGV[1]
-    puts "Need command. See 'fc-manage help policies'."
-  elsif self.private_methods.member?("policies_#{ARGV[1]}".to_sym)
-    send "policies_#{ARGV[1]}"
-  else
-    puts "Unknown command. See 'fc-manage help policies'."
+    puts "Unknown command. See 'fc-manage help #{command}'."
   end
 else
   puts "'#{command}' is not a fc-manage command. See 'fc-manage --help'."
 end
-

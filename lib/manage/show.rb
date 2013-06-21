@@ -4,7 +4,7 @@ end
 
 def show_global_daemon
   r = FC::DB.query("SELECT #{FC::DB.prefix}vars.*, UNIX_TIMESTAMP() as curr_time FROM #{FC::DB.prefix}vars WHERE name='global_daemon_host'").first
-  if r 
+  if r['val']
     puts "Global daemon run on #{r['val']}\nLast run #{r['curr_time']-r['time']} seconds ago."
   else
     puts "Global daemon is not runnning."
