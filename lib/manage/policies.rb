@@ -85,8 +85,8 @@ def policies_change
     copy_storages = copy_storages.split(',').select{|s| storages.member?(s.strip)}.join(',').strip unless copy_storages.empty?
         
     policy.name = name unless name.empty?
-    policy.create_storages = name unless create_storages.empty?
-    policy.copy_storages = name unless copy_storages.empty?
+    policy.create_storages = create_storages unless create_storages.empty?
+    policy.copy_storages = copy_storages unless copy_storages.empty?
     policy.copies = copies.to_i unless copies.empty?
     
     puts %Q{\nStorage
