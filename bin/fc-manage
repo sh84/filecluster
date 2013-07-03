@@ -24,6 +24,8 @@ Command:
    rm <name>           delete storage
    change <name>       change storage attributes
    update_size <name>  update storage size
+   sync_info           show information about synchronization storage and file system
+   sync                synchronize storage and file system
 }],
   'policies' => [
     'show list and manage plicies', 

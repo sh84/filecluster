@@ -146,6 +146,28 @@ def storages_change
   end
 end
 
+def sync_info
+  if storage = find_storage
+    print "Synchronization info for (#{storage.name}) storage and file system (#{storage.path})."
+    make_storages_sync(storage, false)
+  end
+end
+
+def storages_sync
+  if storage = find_storage
+    print "Synchronize (#{storage.name}) storage and file system (#{storage.path})."
+    s = Readline.readline("Continue? (y/n) ", false).strip.downcase
+    puts ""
+    if s == "y" || s == "yes"
+      make_storages_sync(storage, true)
+      puts "Synchronize done."
+      storages_update_size
+    else
+      puts "Canceled."
+    end
+  end
+end
+
 private
 
 def find_storage
@@ -153,4 +175,59 @@ def find_storage
   storage = FC::Storage.where('name = ?', name).first
   puts "Storage #{name} not found." if !storage
   storage
+end
+
+def make_storages_sync(storage, make_delete, silent = false)
+  # get all items for storage
+  db_items = {}
+  FC::DB.query("SELECT i.name, ist.id FROM #{FC::Item.table_name} as i, #{FC::ItemStorage.table_name} as ist WHERE ist.item_id = i.id AND ist.storage_name = '#{storage.name}'").each do |row|
+    name = row['name'].sub(/\/$/, '').sub(/^\//, '').strip
+    path = ''
+    name.split('/').each do |dir|
+      path << dir
+      db_items[path] = [false, path == name ? row['id'].to_i : nil]
+      path << '/'
+    end
+  end
+  
+  # walk on all storage folders and files
+  delete_files = []
+  process_storage_dir_sync = lambda do |dir = ''|
+    Dir.glob(storage.path+dir+'*').each do |f|
+      path = f.sub(storage.path, '')
+      if db_items[path]
+        db_items[path][0] = true
+        next if db_items[path][1]
+      end
+      delete_files << path if File.file?(f)
+      process_storage_dir_sync.call(path+'/') if File.directory?(f)
+    end
+  end  
+  process_storage_dir_sync.call
+    
+  # rm delete_files
+  if make_delete
+    delete_files.each do |f|
+      # check in DB again
+      next if FC::DB.query("SELECT ist.id FROM #{FC::Item.table_name} as i, #{FC::ItemStorage.table_name} as ist WHERE ist.item_id = i.id AND ist.storage_name = '#{storage.name}' AND i.name='#{f}'").first      
+      path = storage.path+f
+      File.delete(path) rescue nil
+    end
+  end
+  puts "Deleted #{delete_files.count} files" unless silent
+  
+  # delete non synchronize items_storages
+  count = 0  
+  db_items.values.each do |item|
+    if !item[0] && item[1] 
+      count += 1
+      FC::DB.query("DELETE FROM #{FC::ItemStorage.table_name} WHERE id=#{item[1]}") if make_delete
+    end
+  end
+  puts "Deleted #{count} items_storages" unless silent
+  
+  # delete empty folders
+  count = `find #{storage.path} -empty -type d`.split("\n").count
+  `find #{storage.path} -empty -type d -delete` if make_delete
+  puts "Deleted #{count} empty folders" unless silent
 end

@@ -7,7 +7,7 @@ module FC
     # Create item by local path.
     # Additional options: 
     #   :replace=true - replace item if it exists
-    # If item_name is part of local_path it prcessed as inplace - local_path is valid path to the item for policy
+    # If item_name is part of local_path it processed as inplace - local_path is valid path to the item for policy
     def self.create_from_local(local_path, item_name, policy, options={})
       raise 'Path not exists' unless File.exists?(local_path)
       raise 'Policy is not FC::Policy' unless policy.instance_of?(FC::Policy)
