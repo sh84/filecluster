@@ -77,7 +77,7 @@ class GlobalDaemonThread < BaseThread
   def make_deleted_error_items_storages
     $log.debug("GlobalDaemonThread: make_deleted_error_items_storages")
     ttl = FC::Var.get('daemon_global_error_items_storages_ttl', 86400).to_i
-    FC::DB.query("UPDATE #{FC::ItemStorage.table_name} SET status = 'delete' WHERE status = 'error' AND time < #{Time.new.to_i - ttl}")
+    FC::DB.query("UPDATE #{FC::ItemStorage.table_name} SET status = 'delete' WHERE status IN ('error', 'copy') AND time < #{Time.new.to_i - ttl}")
   end
   
   def make_deleted_error_items

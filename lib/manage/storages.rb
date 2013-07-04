@@ -146,16 +146,19 @@ def storages_change
   end
 end
 
-def sync_info
+def storages_sync_info
   if storage = find_storage
-    print "Synchronization info for (#{storage.name}) storage and file system (#{storage.path})."
+    return puts "Storage #{storage.name} is not local." if storage.host != FC::Storage.curr_host
+    puts "Get synchronization info for (#{storage.name}) storage and file system (#{storage.path}).."
     make_storages_sync(storage, false)
+    puts "Done."
   end
 end
 
 def storages_sync
   if storage = find_storage
-    print "Synchronize (#{storage.name}) storage and file system (#{storage.path})."
+    return puts "Storage #{storage.name} is not local." if storage.host != FC::Storage.curr_host
+    puts "Synchronize (#{storage.name}) storage and file system (#{storage.path}).."
     s = Readline.readline("Continue? (y/n) ", false).strip.downcase
     puts ""
     if s == "y" || s == "yes"
