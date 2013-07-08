@@ -30,11 +30,9 @@ def run_global_daemon
       $log.debug("spawn GlobalDaemonThread")
       $global_daemon_thread = GlobalDaemonThread.new(timeout)
     end 
-  else
-    if $global_daemon_thread
-      $log.warn("Kill global daemon thread (new host = #{r['host']})")
-      $global_daemon_thread.exit
-    end 
+  elsif $global_daemon_thread && $global_daemon_thread.alive?
+    $log.warn("Kill global daemon thread (new host = #{r['val']})")
+    $global_daemon_thread.exit
   end
 end
 
