@@ -13,6 +13,7 @@ class TaskThread < BaseThread
       end
       $curr_tasks.delete(task)
       $log.debug("TaskThread(#{storage_name}): Finish task type=#{task[:action]}, item_storage=#{task[:item_storage].id}")
+      exit if $exit_signal
     end
   end
   

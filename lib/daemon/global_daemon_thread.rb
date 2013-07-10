@@ -38,25 +38,28 @@ class GlobalDaemonThread < BaseThread
     end
     
     limit = FC::Var.get('daemon_global_tasks_group_limit', 1000).to_i
-    sql = "SELECT i.id as item_id, i.size, i.copies as item_copies, GROUP_CONCAT(ist.storage_name ORDER BY ist.id) as storages, p.id as policy_id, p.copies as policy_copies "+
-      "FROM #{FC::Item.table_name} as i, #{FC::Policy.table_name} as p, #{FC::ItemStorage.table_name} as ist WHERE "+
-      "i.policy_id = p.id AND ist.item_id = i.id AND i.copies > 0 AND i.copies < p.copies AND i.status = 'ready' AND ist.status <> 'delete' GROUP BY i.id LIMIT #{limit}"
-    r = FC::DB.query(sql)
-    r.each do |row|
-      $log.info("GlobalDaemonThread: new item_storage for item #{row['item_id']}")
-      item_storages = row['storages'].split(',')
-      if row['item_copies'] != item_storages.size
-        $log.warn("GlobalDaemonThread: ItemStorage count <> item.copies for item #{row['item_id']}")
-      elsif item_storages.size >= row['policy_copies']
-        $log.warn("GlobalDaemonThread: ItemStorage count >= policy.copies for item #{row['item_id']}")
-      else
-        src_storage = all_storages.detect{|s| item_storages.first == s.name}
-        policy = all_policies.detect{|p| row['policy_id'] == p.id}
-        storage = policy.get_proper_storage_for_copy(row['size'], src_storage.copy_id, item_storages) if src_storage && policy 
-        if storage
-          FC::Item.new(:id => row['item_id']).make_item_storage(storage, 'copy')
+    all_policies.each do |policy|
+      next if policy.copies.to_i < 2
+      copies = (1..policy.copies.to_i-1).to_a.join(',')
+      sql = "SELECT i.id as item_id, i.size, i.copies as item_copies, GROUP_CONCAT(ist.storage_name ORDER BY ist.id) as storages "+
+        "FROM #{FC::Item.table_name} as i, #{FC::ItemStorage.table_name} as ist WHERE i.policy_id = #{policy.id} AND "+
+        "ist.item_id = i.id AND i.copies IN (#{copies}) AND i.status = 'ready' AND ist.status <> 'delete' GROUP BY i.id LIMIT #{limit}"
+      r = FC::DB.query(sql)
+      r.each do |row|
+        $log.info("GlobalDaemonThread: new item_storage for item #{row['item_id']}")
+        item_storages = row['storages'].split(',')
+        if row['item_copies'] != item_storages.count
+          $log.warn("GlobalDaemonThread: ItemStorage count <> item.copies for item #{row['item_id']}")
+        elsif item_storages.count >= policy.copies.to_i
+          $log.warn("GlobalDaemonThread: ItemStorage count >= policy.copies for item #{row['item_id']}")
         else
-          error 'No available storage', :item_id => row['item_id']
+          src_storage = all_storages.detect{|s| item_storages.first == s.name}
+          storage = policy.get_proper_storage_for_copy(row['size'], src_storage.copy_id, item_storages) if src_storage && policy 
+          if storage
+            FC::Item.new(:id => row['item_id']).make_item_storage(storage, 'copy')
+          else
+            error 'No available storage', :item_id => row['item_id']
+          end
         end
       end
     end

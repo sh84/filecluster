@@ -44,7 +44,7 @@ Selecting available storage to copy item by policy.copy_storages (from left to t
 |daemon_global_error_items_ttl|86400|ttl for items with error status before delete|
 |daemon_global_error_items_storages_ttl|86400|ttl for items_storages with error status before delete|
 |daemon_global_tasks_per_thread|10|tasks count for one task thread|
-|daemon_global_tasks_threads_limit|3|tasks threads count limit for one storage|
+|daemon_global_tasks_threads_limit|5|tasks threads count limit for one storage|
 
 ## Usage
 
