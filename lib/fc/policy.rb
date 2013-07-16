@@ -40,17 +40,21 @@ module FC
     # get available storage for copy by copy_id and size
     def get_proper_storage_for_copy(size, copy_id = nil, exclude = [])
       storages = get_copy_storages
-      start_storage_index = nil
-      storages.each_with_index do |s, i|
-        start_storage_index = i if copy_id.to_i == s.copy_id.to_i && !exclude.include?(s.name)
+      storage_index = 0
+      storage_host = nil
+      while s = storages[storage_index]
+        if copy_id.to_i == s.copy_id.to_i && !exclude.include?(s.name)
+          storage_index -= 1 while storage_index > 0 && storages[storage_index-1].host == s.host
+          storage_host = s.host
+          break
+        end
+        storage_index += 1
+      end 
+      storages = (storages[storage_index..-1]+storages[0..storage_index-1]).select do |s|
+        !exclude.include?(s.name) && s.up? && s.size + size < s.size_limit
       end
-      storages = storages[start_storage_index..-1]+storages[0..start_storage_index-1] if storages.size > 0 && start_storage_index
-      storages = storages.select do |storage|
-        !exclude.include?(storage.name) && storage.up? && storage.size + size < storage.size_limit
-      end
-      storage = storages.detect{|s| copy_id.to_i == s.copy_id.to_i}
-      storage = storages.detect{|s| copy_id.to_i < s.copy_id.to_i} unless storage
-      storage = storages.first unless storage
+      storage = storages.select{|s| storage_host == s.host}.sort{|a,b| b.copy_id.to_i <=> a.copy_id.to_i}.first
+      storage = storages.sort{|a,b| b.copy_id.to_i <=> a.copy_id.to_i}.first unless storage
       storage
     end
   end

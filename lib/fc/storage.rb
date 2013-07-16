@@ -84,13 +84,13 @@ module FC
     end
     
     # return object size on storage
-    def file_size(file_name)
+    def file_size(file_name, ignore_errors = false)
       dst_path = "#{self.path}#{file_name}"
       
       cmd = self.class.curr_host == host ? 
         "du -sb #{dst_path}" : 
         "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} 'du -sb #{dst_path}'"
-      r = `#{cmd} 2>&1`
+      r = ignore_errors ? `#{cmd} 2>/dev/null` : `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
       r.to_i
     end

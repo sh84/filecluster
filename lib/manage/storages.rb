@@ -42,7 +42,7 @@ def storages_add
     path = '/' + path unless path[0] == '/'
     storage = FC::Storage.new(:name => name, :host => host, :path => path, :url => url, :size_limit => size_limit, :copy_id => copy_id)
     print "Calc current size.. "
-    size = storage.file_size('')
+    size = storage.file_size('', true)
     puts "ok"
   rescue Exception => e
     puts "Error: #{e.message}"
@@ -88,7 +88,7 @@ end
 def storages_update_size
   if storage = find_storage
     print "Calc current size.. "
-    size = storage.file_size('')
+    size = storage.file_size('', true)
     storage.size = size
     begin
       storage.save
@@ -115,7 +115,7 @@ def storages_change
       path = '/' + path unless path[0] == '/'
       storage.path = path 
       print "Calc current size.. "
-      storage.size = storage.file_size('')
+      storage.size = storage.file_size('', true)
       puts "ok"
     end
     storage.url = url unless url.empty?
