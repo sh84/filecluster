@@ -29,6 +29,9 @@ class TaskThread < BaseThread
   end
   
   def make_copy(task)
+    limit = FC::Var.get('daemon_copy_tasks_limit', 10).to_i
+    sleep 0.1 while $copy_count > limit
+    $copy_count += 1
     item_storage = task[:item_storage]
     storage = $storages.detect{|s| s.name == item_storage.storage_name}
     item = FC::Item.find(item_storage.item_id)
@@ -44,5 +47,7 @@ class TaskThread < BaseThread
   rescue Exception => e
     error "Copy item_storage error: #{e.message}; #{e.backtrace.join(', ')}", :item_id => item_storage.item_id, :item_storage_id => item_storage.id
     $curr_tasks.delete(task)
+  ensure 
+    $copy_count -= 1 if item_storage && $copy_count > 0
   end
 end

@@ -100,6 +100,7 @@ def run_tasks
     run_threads_count = run_threads_count - threads_count
     
     $log.debug("tasks_count: #{tasks_count}, threads_count: #{threads_count}, run_threads_count: #{run_threads_count}")
+    $log.debug("copy_count: #{$copy_count}")
     run_threads_count.times do
       $log.debug("spawn TaskThread for #{storage.name}") 
       $tasks_threads[storage.name] << TaskThread.new(storage.name)

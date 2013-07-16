@@ -203,6 +203,7 @@ module FC
       FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_error_items_storages_ttl', val='86400', descr='ttl for items_storages with error status before delete'")
       FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_tasks_per_thread', val='10', descr='tasks count for one task thread'")
       FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_tasks_threads_limit', val='5', descr='tasks threads count limit for one storage'")
+      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_copy_tasks_limit', val='5', descr='copy tasks count limit for one host'")
     end
   end
 end

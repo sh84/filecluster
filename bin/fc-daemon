@@ -13,6 +13,7 @@ $tasks          = {}          # tasks by storage name
 $curr_tasks     = []          # current tasks
 $tasks_threads  = {}          # threads by storage name
 $check_threads  = {}          # threads by storage name
+$copy_count     = 0           # copy tasks count
 $exit_signal    = false 
 $global_daemon_thread = nil
 
