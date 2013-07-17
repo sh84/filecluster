@@ -29,8 +29,7 @@ class TaskThread < BaseThread
   end
   
   def make_copy(task)
-    limit = FC::Var.get('daemon_copy_tasks_limit', 10).to_i
-    sleep 0.1 while $copy_count > limit
+    sleep 0.1 while $copy_count > FC::Var.get('daemon_copy_tasks_limit', 10).to_i
     $copy_count += 1
     item_storage = task[:item_storage]
     storage = $storages.detect{|s| s.name == item_storage.storage_name}

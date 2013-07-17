@@ -120,7 +120,7 @@ def storages_change
     end
     storage.url = url unless url.empty?
     storage.size_limit = human_to_size(size_limit) unless size_limit.empty?
-    storage.copy_id = copy_id.to_i
+    storage.copy_id = copy_id.to_i unless copy_id.empty?
     
     puts %Q{\nStorage
     Name:       #{storage.name}
