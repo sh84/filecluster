@@ -19,8 +19,8 @@ class DaemonTest < Test::Unit::TestCase
       
       FC::Var.set('daemon_cycle_time', 1)
       FC::Var.set('daemon_global_wait_time', 1)
-      FC::Var.set('daemon_global_error_items_storages_ttl', 0)
-      FC::Var.set('daemon_global_error_items_ttl', 0)
+      FC::Var.set('daemon_global_error_items_storages_ttl', 2)
+      FC::Var.set('daemon_global_error_items_ttl', 2)
       @stotage_checks = 0
       Thread.new do
         Open3.popen2e("#{daemon_bin} -c #{db_config_file} -l debug -h host1") do |stdin, stdout, t|
@@ -113,7 +113,7 @@ class DaemonTest < Test::Unit::TestCase
     @item3.status = 'error'
     @item3.save
     
-    sleep 2
+    sleep 6
     assert_raise(RuntimeError, "Item not deleted after mark_deleted") {@item1.reload}
     assert_equal 0, FC::ItemStorage.where('item_id = ?', @item2.id).count, "ItemStorages not deleted after status='error'"
     @item3.reload

@@ -33,8 +33,6 @@ module FC
       item = FC::Item.where('name=? AND policy_id=?', item_params[:name], policy.id).first
       if item
         if options[:replace] || storage
-          # mark delete item_storages on replace
-          FC::DB.query("UPDATE #{FC::ItemStorage.table_name} SET status='delete' WHERE item_id = #{item.id}") if options[:replace] && !storage
           # replace all fields
           item_params.each{|key, val| item.send("#{key}=", val)}
         else
@@ -51,6 +49,10 @@ module FC
       else 
         storage = policy.get_proper_storage_for_create(item.size)
         FC::Error.raise 'No available storage', :item_id => item.id unless storage
+        
+        # mark delete item_storages on replace
+        FC::DB.query("UPDATE #{FC::ItemStorage.table_name} SET status='delete' WHERE item_id = #{item.id} AND storage_name <> '#{storage.name}'") if options[:replace]          
+        
         item_storage = item.make_item_storage(storage)
         item.copy_item_storage(local_path, storage, item_storage)
       end

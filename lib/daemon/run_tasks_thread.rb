@@ -1,6 +1,6 @@
 class RunTasksThread < BaseThread
   def go
-    $log.debug('Run tasks (copy_count: #{$copy_count})')
+    $log.debug("Run tasks (copy_count: #{$copy_count})")
     $storages.each do |storage|
       $tasks_threads[storage.name] = [] unless $tasks_threads[storage.name]
       $tasks_threads[storage.name].delete_if {|thread| !thread.alive?}
