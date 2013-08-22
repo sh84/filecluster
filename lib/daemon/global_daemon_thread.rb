@@ -33,7 +33,10 @@ class GlobalDaemonThread < BaseThread
     all_policies.each do |policy|
       metaclass = class << policy; self; end
       metaclass.send(:define_method, :get_copy_storages) do
-        @copy_storages_cache ||= self.copy_storages.split(',').map{|storage_name| all_storages.detect{|s| storage_name == s.name} }
+        self.class.get_copy_storages_mutex.synchronize do
+          @copy_storages_cache ||= self.copy_storages.split(',').map{|storage_name| all_storages.detect{|s| storage_name == s.name} }
+        end
+        @copy_storages_cache
       end
     end
     

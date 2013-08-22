@@ -70,11 +70,11 @@ class PolicyTest < Test::Unit::TestCase
     
     @@policy.copy_storages = 'rec3-sda,rec1-sda,rec2-sda'
     @@policy.save
-    assert_equal 'rec3-sda', @@policy.get_proper_storage_for_copy(1).name, 'first storage in copy_storages'
+    assert_equal 'rec1-sda', @@policy.get_proper_storage_for_copy(1).name, 'storage with min copy_id in copy_storages'
     assert_equal 'rec2-sda', @@policy.get_proper_storage_for_copy(1, 2).name, 'storage by copy_id'
     @@policy.copy_storages = 'rec1-sda,rec3-sda'
     @@policy.save
-    assert_equal 'rec3-sda', @@policy.get_proper_storage_for_copy(1, 2).name, 'storage by copy_id'
+    assert_equal 'rec1-sda', @@policy.get_proper_storage_for_copy(1, 2).name, 'storage by copy_id'
     @@policy.copy_storages = 'rec3-sda,rec1-sda,rec2-sda,rec2-sdb'
     @@policy.save
     assert_equal 'rec2-sda', @@policy.get_proper_storage_for_copy(1, 4).name, 'storage by copy_id'
@@ -87,7 +87,7 @@ class PolicyTest < Test::Unit::TestCase
     @@policy.save
     @@storages[0].check_time = 0
     @@storages[0].save
-    assert_equal 'rec3-sda', @@policy.get_proper_storage_for_copy(1, 1).name, 'storage by copy_id'
+    assert_equal 'rec2-sda', @@policy.get_proper_storage_for_copy(1, 1).name, 'storage by copy_id'
   end
   
   should "filter_by_host" do
