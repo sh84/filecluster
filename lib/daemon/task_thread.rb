@@ -21,6 +21,7 @@ class TaskThread < BaseThread
     item_storage = task[:item_storage]
     storage = $storages.detect{|s| s.name == item_storage.storage_name}
     item = FC::Item.find(item_storage.item_id)
+    $log.debug("Delete #{storage.path}#{item.name}")
     storage.delete_file(item.name)
     item_storage.delete
   rescue Exception => e

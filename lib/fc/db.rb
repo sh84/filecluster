@@ -204,6 +204,7 @@ module FC
       FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_tasks_per_thread', val='10', descr='tasks count for one task thread'")
       FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_tasks_threads_limit', val='10', descr='tasks threads count limit for one storage'")
       FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_copy_tasks_limit', val='10', descr='copy tasks count limit for one host'")
+      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_restart_period', val='86400', descr='time between fc-daemon self restart'")
     end
   end
 end

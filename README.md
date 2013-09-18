@@ -46,6 +46,7 @@ Selecting available storage to copy item by policy.copy_storages (from left to t
 |daemon_global_tasks_per_thread|10|tasks count for one task thread|
 |daemon_global_tasks_threads_limit|10|tasks threads count limit for one storage|
 |daemon_copy_tasks_limit|10|copy tasks count limit for one host|
+|daemon_restart_period|86400|time between fc-daemon self restart|
 
 ## Usage
 

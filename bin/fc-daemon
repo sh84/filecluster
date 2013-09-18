@@ -49,6 +49,9 @@ end
 trap("TERM") {quit_on_quit}
 trap("INT") {quit_on_quit}
 
+
+
+start_time = Time.new.to_i
 while true do
   if $exit_signal
     $log.debug('wait tasks_threads')
@@ -56,9 +59,13 @@ while true do
     if $global_daemon_thread
       $log.debug('wait global_daemon_thread')
       $global_daemon_thread.join
-    end 
+    end
     $log.info('Exit')
-    exit
+    if $exit_signal == :restart
+      exec('ruby', __FILE__)
+    else
+      exit
+    end
   else
     run_global_daemon
     update_storages
@@ -68,4 +75,9 @@ while true do
   end
   $log.debug('sleep')
   sleep FC::Var.get('daemon_cycle_time', 30).to_i
+  alive_time = Time.new.to_i - start_time
+  if !$exit_signal && alive_time > FC::Var.get('daemon_restart_period', 86400).to_i
+    $log.info("Self restart, #{alive_time} seconds up")
+    $exit_signal = :restart
+  end
 end
