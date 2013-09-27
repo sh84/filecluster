@@ -57,7 +57,7 @@ class GlobalDaemonThread < BaseThread
           $log.warn("GlobalDaemonThread: ItemStorage count >= policy.copies for item #{row['item_id']}")
         else
           src_storage = all_storages.detect{|s| item_storages.first == s.name}
-          storage = policy.get_proper_storage_for_copy(row['size'], src_storage, item_storages) if src_storage && policy 
+          storage = policy.get_proper_storage_for_copy(row['size'], src_storage.copy_id, item_storages) if src_storage && policy 
           if storage
             FC::Item.new(:id => row['item_id']).make_item_storage(storage, 'copy')
           else

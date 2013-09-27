@@ -40,9 +40,8 @@ module FC
     def copy_path(local_path, file_name)
       dst_path = "#{self.path}#{file_name}"
       
-      cmd = self.class.curr_host == host ? 
-        "mkdir -p #{File.dirname(dst_path)}" : 
-        "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} 'mkdir -p #{File.dirname(dst_path)}'"
+      cmd = "rm -rf #{dst_path}; mkdir -p #{File.dirname(dst_path)}"
+      cmd = self.class.curr_host == host ? cmd : "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} '#{cmd}'"
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
       
@@ -57,7 +56,7 @@ module FC
     def copy_to_local(file_name, local_path)
       src_path = "#{self.path}#{file_name}"
       
-      r = `mkdir -p #{File.dirname(local_path)} 2>&1`
+      r = `rm -rf #{local_path}; mkdir -p #{File.dirname(local_path)} 2>&1`
       raise r if $?.exitstatus != 0
       
       cmd = self.class.curr_host == host ? 
