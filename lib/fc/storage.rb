@@ -1,4 +1,5 @@
 # encoding: utf-8
+require 'shellwords'
 
 module FC
   class Storage < DbBase
@@ -40,14 +41,14 @@ module FC
     def copy_path(local_path, file_name)
       dst_path = "#{self.path}#{file_name}"
       
-      cmd = "rm -rf #{dst_path}; mkdir -p #{File.dirname(dst_path)}"
+      cmd = "rm -rf #{dst_path.shellescape}; mkdir -p #{File.dirname(dst_path).shellescape}"
       cmd = self.class.curr_host == host ? cmd : "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} '#{cmd}'"
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
       
       cmd = self.class.curr_host == host ? 
-        "cp -r #{local_path} #{dst_path}" : 
-        "scp -rB #{local_path} #{self.host}:#{dst_path}"
+        "cp -r #{local_path.shellescape} #{dst_path}" : 
+        "scp -rB #{local_path.shellescape} #{self.host}:#{dst_path.shellescape}"
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
     end
@@ -56,12 +57,12 @@ module FC
     def copy_to_local(file_name, local_path)
       src_path = "#{self.path}#{file_name}"
       
-      r = `rm -rf #{local_path}; mkdir -p #{File.dirname(local_path)} 2>&1`
+      r = `rm -rf #{local_path.shellescape}; mkdir -p #{File.dirname(local_path).shellescape} 2>&1`
       raise r if $?.exitstatus != 0
       
       cmd = self.class.curr_host == host ? 
-        "cp -r #{src_path} #{local_path}" : 
-        "scp -rB #{self.host}:#{src_path} #{local_path}"
+        "cp -r #{src_path.shellescape} #{local_path.shellescape}" : 
+        "scp -rB #{self.host}:#{src_path.shellescape} #{local_path.shellescape}"
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
     end
@@ -70,14 +71,14 @@ module FC
     def delete_file(file_name)
       dst_path = "#{self.path}#{file_name}"
       cmd = self.class.curr_host == host ? 
-        "rm -rf #{dst_path}" : 
-        "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} 'rm -rf #{dst_path}'"
+        "rm -rf #{dst_path.shellescape}" : 
+        "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} 'rm -rf #{dst_path.shellescape}'"
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
       
       cmd = self.class.curr_host == host ? 
-        "ls -la #{dst_path}" : 
-        "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} 'ls -la #{dst_path}'"
+        "ls -la #{dst_path.shellescape}" : 
+        "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} 'ls -la #{dst_path.shellescape}'"
       r = `#{cmd} 2>/dev/null`
       raise "Path #{dst_path} not deleted" unless r.empty?
     end
@@ -87,8 +88,8 @@ module FC
       dst_path = "#{self.path}#{file_name}"
       
       cmd = self.class.curr_host == host ? 
-        "du -sb #{dst_path}" : 
-        "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} 'du -sb #{dst_path}'"
+        "du -sb #{dst_path.shellescape}" : 
+        "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} 'du -sb #{dst_path.shellescape}'"
       r = ignore_errors ? `#{cmd} 2>/dev/null` : `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
       r.to_i

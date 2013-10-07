@@ -1,3 +1,6 @@
+# encoding: utf-8
+require 'shellwords'
+
 def storages_list
   storages = FC::Storage.where("1 ORDER BY host")
   if storages.size == 0
@@ -230,7 +233,7 @@ def make_storages_sync(storage, make_delete, silent = false)
   puts "Deleted #{count} items_storages" unless silent
   
   # delete empty folders
-  count = `find #{storage.path} -empty -type d`.split("\n").count
-  `find #{storage.path} -empty -type d -delete` if make_delete
+  count = `find #{storage.path.shellescape} -empty -type d`.split("\n").count
+  `find #{storage.path.shellescape} -empty -type d -delete` if make_delete
   puts "Deleted #{count} empty folders" unless silent
 end

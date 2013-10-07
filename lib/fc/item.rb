@@ -1,4 +1,5 @@
 # encoding: utf-8
+require 'shellwords'
 
 module FC
   class Item < DbBase
@@ -15,7 +16,7 @@ module FC
         :name => item_name.to_s.gsub('//', '/').sub(/\/$/, '').sub(/^\//, '').strip,
         :policy_id => policy.id,
         :dir => File.directory?(local_path),
-        :size => `du -sb #{local_path}`.to_i
+        :size => `du -sb #{local_path.shellescape}`.to_i
       })
       item_params.delete(:replace)
       item_params.delete(:inplace)
