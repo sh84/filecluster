@@ -47,7 +47,7 @@ module FC
       raise r if $?.exitstatus != 0
       
       cmd = self.class.curr_host == host ? 
-        "cp -r #{local_path.shellescape} #{dst_path}" : 
+        "cp -r #{local_path.shellescape} #{dst_path.shellescape}" : 
         "scp -rB #{local_path.shellescape} #{self.host}:#{dst_path.shellescape}"
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
