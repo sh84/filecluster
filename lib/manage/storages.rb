@@ -236,4 +236,22 @@ def make_storages_sync(storage, make_delete, silent = false)
   count = `find #{storage.path.shellescape} -empty -type d`.split("\n").count
   `find #{storage.path.shellescape} -empty -type d -delete` if make_delete
   puts "Deleted #{count} empty folders" unless silent
+  
+  if (ARGV[3])
+    File.open(ARGV[3], 'w') do |file|
+      delete_files.each do |f|
+        file.puts storage.path+f
+      end
+    end
+    puts "Save deleted files to #{ARGV[3]}" unless silent
+  end
+  
+  if (ARGV[4])
+    File.open(ARGV[4], 'w') do |file|
+      db_items.values.each do |item|
+        file.puts item[1] if !item[0] && item[1]
+      end
+    end
+    puts "Save deleted items_storages to #{ARGV[4]}" unless silent
+  end
 end

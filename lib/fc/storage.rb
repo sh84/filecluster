@@ -42,13 +42,13 @@ module FC
       dst_path = "#{self.path}#{file_name}"
       
       cmd = "rm -rf #{dst_path.shellescape}; mkdir -p #{File.dirname(dst_path).shellescape}"
-      cmd = self.class.curr_host == host ? cmd : "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} '#{cmd}'"
+      cmd = self.class.curr_host == host ? cmd : "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"#{cmd}\""
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
       
       cmd = self.class.curr_host == host ? 
         "cp -r #{local_path.shellescape} #{dst_path.shellescape}" : 
-        "scp -rB #{local_path.shellescape} #{self.host}:#{dst_path.shellescape}"
+        "scp -rB #{local_path.shellescape} #{self.host}:\"#{dst_path.shellescape}\""
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
     end
@@ -62,7 +62,7 @@ module FC
       
       cmd = self.class.curr_host == host ? 
         "cp -r #{src_path.shellescape} #{local_path.shellescape}" : 
-        "scp -rB #{self.host}:#{src_path.shellescape} #{local_path.shellescape}"
+        "scp -rB #{self.host}:\"#{src_path.shellescape}\" #{local_path.shellescape}"
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
     end
@@ -72,13 +72,13 @@ module FC
       dst_path = "#{self.path}#{file_name}"
       cmd = self.class.curr_host == host ? 
         "rm -rf #{dst_path.shellescape}" : 
-        "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} 'rm -rf #{dst_path.shellescape}'"
+        "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"rm -rf #{dst_path.shellescape}\""
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
       
       cmd = self.class.curr_host == host ? 
         "ls -la #{dst_path.shellescape}" : 
-        "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} 'ls -la #{dst_path.shellescape}'"
+        "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"ls -la #{dst_path.shellescape}\""
       r = `#{cmd} 2>/dev/null`
       raise "Path #{dst_path} not deleted" unless r.empty?
     end
@@ -89,7 +89,7 @@ module FC
       
       cmd = self.class.curr_host == host ? 
         "du -sb #{dst_path.shellescape}" : 
-        "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} 'du -sb #{dst_path.shellescape}'"
+        "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"du -sb #{dst_path.shellescape}\""
       r = ignore_errors ? `#{cmd} 2>/dev/null` : `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
       r.to_i
