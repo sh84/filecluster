@@ -45,12 +45,12 @@ class DaemonTest < Test::Unit::TestCase
       `cp #{@@test_file_path} #{@@test_dir_path}/bbb/test2`
       
       @@storages = []
-      @@storages << FC::Storage.new(:name => 'host1-sda', :host => 'host1', :path => '/tmp/host1-sda/', :copy_id => 1, :size_limit => 1000000000)
-      @@storages << FC::Storage.new(:name => 'host1-sdb', :host => 'host1', :path => '/tmp/host1-sdb/', :copy_id => 2, :size_limit => 1000000000)
-      @@storages << FC::Storage.new(:name => 'host1-sdc', :host => 'host1', :path => '/tmp/host1-sdc/', :copy_id => 1, :size_limit => 1000000000)
+      @@storages << FC::Storage.new(:name => 'host1-sda', :host => 'host1', :path => '/tmp/host1-sda/', :copy_storages => 'host1-sdb,host1-sdc', :size_limit => 1000000000)
+      @@storages << FC::Storage.new(:name => 'host1-sdb', :host => 'host1', :path => '/tmp/host1-sdb/', :copy_storages => 'host1-sda,host1-sdc', :size_limit => 1000000000)
+      @@storages << FC::Storage.new(:name => 'host1-sdc', :host => 'host1', :path => '/tmp/host1-sdc/', :copy_storages => 'host1-sda,host1-sdb', :size_limit => 1000000000)
       @@storages.each { |storage| storage.save}
       
-      @@policy = FC::Policy.new(:create_storages => 'host1-sda,host1-sdb,host1-sdc', :copy_storages => 'host1-sda,host1-sdb,host1-sdc', :copies => 2, :name => 'policy 1')
+      @@policy = FC::Policy.new(:create_storages => 'host1-sda,host1-sdb,host1-sdc', :copies => 2, :name => 'policy 1')
       @@policy.save
       
       # wait for running fc-daemon
@@ -72,7 +72,7 @@ class DaemonTest < Test::Unit::TestCase
       `rm -rf #{@@test_dir_path}`
     end
   end
-  
+
   should "daemon_all" do
     @@storages.each {|storage| storage.reload}
     assert @@storages[0].up?, "Storage #{@@storages[0].name} down" 

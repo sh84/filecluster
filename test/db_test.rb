@@ -15,9 +15,9 @@ class DbTest < Test::Unit::TestCase
       @@storages_ids = storages.map{|storage| storage.save; storage.id }
       
       policies = []
-      policies << FC::Policy.new(:create_storages => 'rec1-sda,rec1-sdd', :copy_storages => 'rec2-sda,rec2-sdd', :copies => 2, :name => 'policy 1')
-      policies << FC::Policy.new(:create_storages => 'rec1-sda,bla,rec2-sdd', :copy_storages => 'rec2-sda,bla,rec1-sdd', :copies => 3, :name => 'policy 2')
-      policies << FC::Policy.new(:create_storages => 'bla,rec1-sda,test', :copy_storages => 'bla,rec2-sda,test', :copies => 4, :name => 'policy 3')
+      policies << FC::Policy.new(:create_storages => 'rec1-sda,rec1-sdd', :copies => 2, :name => 'policy 1')
+      policies << FC::Policy.new(:create_storages => 'rec1-sda,bla,rec2-sdd', :copies => 3, :name => 'policy 2')
+      policies << FC::Policy.new(:create_storages => 'bla,rec1-sda,test', :copies => 4, :name => 'policy 3')
       @@policies_ids = policies.map{|policy| policy.save; policy.id }
       
       items = []
@@ -78,13 +78,9 @@ class DbTest < Test::Unit::TestCase
     assert_equal 'rec1-sda,rec1-sdd', @policies[0].create_storages, "Policy (id=#{@policies[0].id}) incorrect create_storages"
     assert_equal 'rec1-sda,rec2-sdd', @policies[1].create_storages, "Policy (id=#{@policies[0].id}) incorrect create_storages"
     assert_equal 'rec1-sda', @policies[2].create_storages, "Policy (id=#{@policies[0].id}) incorrect create_storages"
-    assert_equal 'rec2-sda,rec2-sdd', @policies[0].copy_storages, "Policy (id=#{@policies[0].id}) incorrect copy_storages"
-    assert_equal 'rec2-sda,rec1-sdd', @policies[1].copy_storages, "Policy (id=#{@policies[0].id}) incorrect copy_storages"
-    assert_equal 'rec2-sda', @policies[2].copy_storages, "Policy (id=#{@policies[0].id}) incorrect copy_storages"
     
-    assert_raise(Mysql2::Error, 'Create policy with uniq name') { FC::Policy.new(:create_storages => 'bla,test', :copy_storages => 'rec2-sda', :name => 'policy 1').save }
-    assert_raise(Mysql2::Error, 'Create policy with incorrect create_storages') { FC::Policy.new(:create_storages => 'bla,test', :copy_storages => 'rec2-sda', :name => 'new policy').save }
-    assert_raise(Mysql2::Error, 'Create policy with incorrect copy_storages') { FC::Policy.new(:create_storages => 'rec1-sda', :copy_storages => 'bla,test', :name => 'new policy').save }
+    assert_raise(Mysql2::Error, 'Create policy with uniq name') { FC::Policy.new(:create_storages => 'bla,test', :name => 'policy 1').save }
+    assert_raise(Mysql2::Error, 'Create policy with incorrect create_storages') { FC::Policy.new(:create_storages => 'bla,test', :name => 'new policy').save }
     
     assert_raise(Mysql2::Error, 'Change storage name with linked polices') { @storages[0].name = 'blabla'; @storages[0].save }
     assert_raise(Mysql2::Error, 'Delete storage name with linked polices') { @storages[0].delete }
@@ -94,19 +90,15 @@ class DbTest < Test::Unit::TestCase
     @policies[0].reload
     @policies[1].reload
     assert_equal 'rec1-sda', @policies[0].create_storages, "Policy (id=#{@policies[0].id}) incorrect create_storages after storage change"
-    assert_equal 'rec2-sda', @policies[1].copy_storages, "Policy (id=#{@policies[1].id}) incorrect copy_storages after storage change"
     @storages[7].delete  #rec2-sdd
     @@storages_ids.delete(@storages[7].id)
     @policies[0].reload
     @policies[1].reload
     assert_equal 'rec1-sda', @policies[1].create_storages, "Policy (id=#{@policies[1].id}) incorrect create_storages after storage delete"
-    assert_equal 'rec2-sda', @policies[0].copy_storages, "Policy (id=#{@policies[0].id}) incorrect copy_storages after storage delete"
     @policies[0].create_storages = 'rec2-sda,rec1-sda,bla bla'
-    @policies[0].copy_storages = 'rec1-sdb,rec2-sda,bla bla'
     @policies[0].save
     @policies[0].reload
     assert_equal 'rec2-sda,rec1-sda', @policies[0].create_storages, "Policy (id=#{@policies[0].id}) incorrect create_storages after change"
-    assert_equal 'rec1-sdb,rec2-sda', @policies[0].copy_storages, "Policy (id=#{@policies[0].id}) incorrect copy_storages after change"
     assert_raise(Mysql2::Error, 'Save empty policy storage') { @policies[0].create_storages = 'blabla'; @policies[0].save }
   end
   

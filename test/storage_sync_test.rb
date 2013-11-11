@@ -1,7 +1,7 @@
 require 'helper'
 require 'manage'
 
-class DaemonTest < Test::Unit::TestCase
+class StorageSyncTest < Test::Unit::TestCase
   class << self
     def startup
       # tmp fake storage dir
@@ -12,9 +12,9 @@ class DaemonTest < Test::Unit::TestCase
       @@test_file_path = '/tmp/fc_test_file'
       `dd if=/dev/urandom of=#{@@test_file_path} bs=1M count=1 2>&1`
       
-      @@storage = FC::Storage.new(:name => 'host1-sda', :host => 'host1', :path => '/tmp/host1-sda/', :copy_id => 1, :size_limit => 1000000000, :check_time => Time.new.to_i)
+      @@storage = FC::Storage.new(:name => 'host1-sda', :host => 'host1', :path => '/tmp/host1-sda/', :size_limit => 1000000000, :check_time => Time.new.to_i)
       @@storage.save
-      @@policy = FC::Policy.new(:create_storages => 'host1-sda', :copy_storages => 'host1-sda', :copies => 1, :name => 'policy 1')
+      @@policy = FC::Policy.new(:create_storages => 'host1-sda', :copies => 1, :name => 'policy 1')
       @@policy.save
     end
     
@@ -38,13 +38,15 @@ class DaemonTest < Test::Unit::TestCase
     assert_nothing_raised { @item2 = FC::Item.create_from_local(@@test_file_path, 'a/b/test2', @@policy, {:tag => 'test'}) }
     assert_nothing_raised { @item3 = FC::Item.create_from_local(@@test_file_path, 'a/b/c/test3', @@policy, {:tag => 'test'}) }
     assert_nothing_raised { @item4 = FC::Item.create_from_local(@@test_file_path, 'a/b/c/d/test4', @@policy, {:tag => 'test'}) }
+    assert_nothing_raised { @item5 = FC::Item.create_from_local(@@test_file_path, 'a/del_file', @@policy, {:tag => 'test'}) }
+    @item5.mark_deleted
     `mv /tmp/host1-sda/a/test1 /tmp/host1-sda/test1`
     `mv /tmp/host1-sda/a/b/c/d/test4 /tmp/host1-sda/a/b/c/d/test5`
     `mkdir /tmp/host1-sda/test_dir`
     `cp #{@@test_file_path} /tmp/host1-sda/test_dir/t1`
     `cp #{@@test_file_path} /tmp/host1-sda/test_dir/t2`
     
-    make_storages_sync(@@storage, true, true)
+    make_storages_sync(@@storage, true, true, true)
     
     @item1.reload
     @item2.reload
@@ -60,6 +62,8 @@ class DaemonTest < Test::Unit::TestCase
     assert_equal size, `du -sb /tmp/host1-sda/a/b/c/test3 2>&1`.to_i
     assert_equal 0, `du -sb /tmp/host1-sda/a/b/c/d/test5 2>&1`.to_i
     assert_equal 0, `du -sb /tmp/host1-sda/a/b/c/d 2>&1`.to_i
-    assert_equal 0, `du -sb tmp/host1-sda/test_dir 2>&1`.to_i
+    assert_equal 0, `du -sb /tmp/host1-sda/test_dir 2>&1`.to_i
+    assert_equal 0, @item5.get_item_storages.size
+    assert_equal 0, `du -sb /tmp/host1-sda/a/del_file 2>&1`.to_i
   end
 end

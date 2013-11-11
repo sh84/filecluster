@@ -85,21 +85,17 @@ module FC
           size bigint NOT NULL DEFAULT 0,
           size_limit bigint NOT NULL DEFAULT 0,
           check_time int DEFAULT NULL,
-          copy_id int NOT NULL DEFAULT 0,
+          copy_storages text NOT NULL DEFAULT '',
           PRIMARY KEY (id), UNIQUE KEY (name), KEY (host)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
       })
       proc = %{
-        # update policy.create_storages and policy.copy_storages on storage delete and update
+        # update policy.create_storages on storage delete and update
         UPDATE #{@prefix}policies, 
           (SELECT #{@prefix}policies.id, GROUP_CONCAT(#{@prefix}storages.name ORDER BY FIND_IN_SET(#{@prefix}storages.name, create_storages)) as storages FROM #{@prefix}policies LEFT JOIN #{@prefix}storages ON 
-            FIND_IN_SET(#{@prefix}storages.name, create_storages) GROUP BY #{@prefix}policies.id) as policy_create,
-          (SELECT #{@prefix}policies.id, GROUP_CONCAT(#{@prefix}storages.name ORDER BY FIND_IN_SET(#{@prefix}storages.name, copy_storages)) as storages FROM #{@prefix}policies LEFT JOIN #{@prefix}storages ON 
-            FIND_IN_SET(#{@prefix}storages.name, copy_storages) GROUP BY #{@prefix}policies.id) as policy_copy
-        SET 
-          #{@prefix}policies.create_storages = policy_create.storages, 
-          #{@prefix}policies.copy_storages = policy_copy.storages
-        WHERE policy_create.id = #{@prefix}policies.id AND policy_copy.id = #{@prefix}policies.id;
+            FIND_IN_SET(#{@prefix}storages.name, create_storages) GROUP BY #{@prefix}policies.id) as policy_create
+        SET #{@prefix}policies.create_storages = policy_create.storages
+        WHERE policy_create.id = #{@prefix}policies.id;
       }
       proc_update = %{
         IF OLD.name <> NEW.name THEN 
@@ -114,17 +110,14 @@ module FC
           id int NOT NULL AUTO_INCREMENT,
           name varchar(255) NOT NULL DEFAULT '',
           create_storages text NOT NULL DEFAULT '',
-          copy_storages text NOT NULL DEFAULT '',
           copies int NOT NULL DEFAULT 0,
           PRIMARY KEY (id), UNIQUE KEY (name)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
       })
       proc = %{
-        # update policy.create_storages and policy.copy_storages on policy change - guarantee valid policy.storages
+        # update policy.create_storages on policy change - guarantee valid policy.storages
         SELECT GROUP_CONCAT(name ORDER BY FIND_IN_SET(name, NEW.create_storages)) INTO @create_storages_list FROM #{@prefix}storages WHERE FIND_IN_SET(name, NEW.create_storages);
-        SELECT GROUP_CONCAT(name ORDER BY FIND_IN_SET(name, NEW.copy_storages)) INTO @copy_storages_list FROM #{@prefix}storages WHERE FIND_IN_SET(name, NEW.copy_storages);
         SET NEW.create_storages = @create_storages_list;
-        SET NEW.copy_storages = @copy_storages_list;
       }
       FC::DB.connect.query("CREATE TRIGGER fc_policies_before_insert BEFORE INSERT on #{@prefix}policies FOR EACH ROW BEGIN #{proc} END")
       FC::DB.connect.query("CREATE TRIGGER fc_policies_before_update BEFORE UPDATE on #{@prefix}policies FOR EACH ROW BEGIN #{proc} END")

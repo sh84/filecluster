@@ -31,7 +31,7 @@ Selecting available storage to store item by policy.create_storages (from left t
     
 ## Copy policy
 
-Selecting available storage to copy item by policy.copy_storages (from left to tight) with the nearest copy_id.
+Selecting available storage to copy item by storage.copy_storages (from left to right).
 
 ## Variables
 

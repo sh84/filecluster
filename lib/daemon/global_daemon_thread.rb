@@ -30,11 +30,11 @@ class GlobalDaemonThread < BaseThread
     all_policies = FC::Policy.where
     
     # policies.get_storages => all_policies.select
-    all_policies.each do |policy|
-      metaclass = class << policy; self; end
+    all_storages.each do |storage|
+      metaclass = class << storage; self; end
       metaclass.send(:define_method, :get_copy_storages) do
         self.class.get_copy_storages_mutex.synchronize do
-          @copy_storages_cache ||= self.copy_storages.split(',').map{|storage_name| all_storages.detect{|s| storage_name == s.name} }
+          @copy_storages_cache ||= self.copy_storages.to_s.split(',').map{|storage_name| all_storages.detect{|s| storage_name == s.name} }
         end
         @copy_storages_cache
       end
@@ -57,7 +57,7 @@ class GlobalDaemonThread < BaseThread
           $log.warn("GlobalDaemonThread: ItemStorage count >= policy.copies for item #{row['item_id']}")
         else
           src_storage = all_storages.detect{|s| item_storages.first == s.name}
-          storage = policy.get_proper_storage_for_copy(row['size'], src_storage.copy_id, item_storages) if src_storage && policy 
+          storage = src_storage.get_proper_storage_for_copy(row['size'], item_storages) if src_storage 
           if storage
             FC::Item.new(:id => row['item_id']).make_item_storage(storage, 'copy')
           else

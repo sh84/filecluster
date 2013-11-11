@@ -25,7 +25,7 @@ def storages_show
   Url:            #{storage.url}
   Size:           #{size_to_human storage.size}
   Size limit:     #{size_to_human storage.size_limit}
-  Copy id:        #{storage.copy_id}
+  Copy storages:  #{storage.copy_storages}
   Check time:     #{storage.check_time ? "#{Time.at(storage.check_time)} (#{storage.check_time_delay} seconds ago)" : ''}
   Status:         #{storage.up? ? colorize_string('UP', :green) : colorize_string('DOWN', :red)}
   Items storages: #{count}}
@@ -39,11 +39,13 @@ def storages_add
   path = stdin_read_val('Path')
   url = stdin_read_val('Url')
   size_limit = human_to_size stdin_read_val('Size limit') {|val| "Size limit not is valid size." unless human_to_size(val)}
-  copy_id = stdin_read_val('Copy id').to_i
+  copy_storages = stdin_read_val('Copy storages')
+  storages = FC::Storage.where.map(&:name)
+  copy_storages = copy_storages.split(',').select{|s| storages.member?(s.strip)}.join(',').strip
   begin
     path = path +'/' unless path[-1] == '/'
     path = '/' + path unless path[0] == '/'
-    storage = FC::Storage.new(:name => name, :host => host, :path => path, :url => url, :size_limit => size_limit, :copy_id => copy_id)
+    storage = FC::Storage.new(:name => name, :host => host, :path => path, :url => url, :size_limit => size_limit, :copy_storages => copy_storages)
     print "Calc current size.. "
     size = storage.file_size('', true)
     puts "ok"
@@ -52,13 +54,13 @@ def storages_add
     exit
   end
   puts %Q{\nStorage
-  Name:       #{name}
-  Host:       #{host} 
-  Path:       #{path} 
-  Url:        #{url}
-  Size:       #{size_to_human size}
-  Size limit: #{size_to_human size_limit}
-  Copy id:    #{copy_id}}
+  Name:         #{name}
+  Host:         #{host} 
+  Path:         #{path} 
+  Url:          #{url}
+  Size:         #{size_to_human size}
+  Size limit:   #{size_to_human size_limit}
+  Copy storages #{copy_storages}}
   s = Readline.readline("Continue? (y/n) ", false).strip.downcase
   puts ""
   if s == "y" || s == "yes"
@@ -90,9 +92,11 @@ end
 
 def storages_update_size
   if storage = find_storage
+    FC::DB.close
     print "Calc current size.. "
     size = storage.file_size('', true)
     storage.size = size
+    FC::DB.connect
     begin
       storage.save
     rescue Exception => e
@@ -110,7 +114,7 @@ def storages_change
     path = stdin_read_val("Path (now #{storage.path})", true)
     url = stdin_read_val("Url (now #{storage.url})", true)
     size_limit = stdin_read_val("Size (now #{size_to_human(storage.size_limit)})", true) {|val| "Size limit not is valid size." if !val.empty? && !human_to_size(val)}
-    copy_id = stdin_read_val("Copy id (now #{storage.copy_id})", true)
+    copy_storages = stdin_read_val("Copy storages (now #{storage.copy_storages})", true)
     
     storage.host = host unless host.empty?
     if !path.empty? && path != storage.path
@@ -123,16 +127,17 @@ def storages_change
     end
     storage.url = url unless url.empty?
     storage.size_limit = human_to_size(size_limit) unless size_limit.empty?
-    storage.copy_id = copy_id.to_i unless copy_id.empty?
+    storages = FC::Storage.where.map(&:name)
+    copy_storages = copy_storages.split(',').select{|s| storages.member?(s.strip)}.join(',').strip unless copy_storages.empty?
     
     puts %Q{\nStorage
-    Name:       #{storage.name}
-    Host:       #{storage.host} 
-    Path:       #{storage.path} 
-    Url:        #{storage.url}
-    Size:       #{size_to_human storage.size}
-    Size limit: #{size_to_human storage.size_limit}
-    Copy id:    #{copy_id}}
+    Name:          #{storage.name}
+    Host:          #{storage.host} 
+    Path:          #{storage.path} 
+    Url:           #{storage.url}
+    Size:          #{size_to_human storage.size}
+    Size limit:    #{size_to_human storage.size_limit}
+    Copy storages: #{copy_storages}}
     s = Readline.readline("Continue? (y/n) ", false).strip.downcase
     puts ""
     if s == "y" || s == "yes"
@@ -167,6 +172,7 @@ def storages_sync
     if s == "y" || s == "yes"
       make_storages_sync(storage, true)
       puts "Synchronize done."
+      FC::DB.connect
       storages_update_size
     else
       puts "Canceled."
@@ -183,27 +189,30 @@ def find_storage
   storage
 end
 
-def make_storages_sync(storage, make_delete, silent = false)
+def make_storages_sync(storage, make_delete, silent = false, no_reconnect = false)
   # get all items for storage
+  puts "Getting all items from DB" unless silent
   db_items = {}
-  FC::DB.query("SELECT i.name, ist.id FROM #{FC::Item.table_name} as i, #{FC::ItemStorage.table_name} as ist WHERE ist.item_id = i.id AND ist.storage_name = '#{storage.name}'").each do |row|
+  FC::DB.query("SELECT i.name, ist.id, ist.status FROM #{FC::Item.table_name} as i, #{FC::ItemStorage.table_name} as ist WHERE ist.item_id = i.id AND ist.storage_name = '#{storage.name}'").each do |row|
     name = row['name'].sub(/\/$/, '').sub(/^\//, '').strip
     path = ''
     name.split('/').each do |dir|
       path << dir
-      db_items[path] = [false, path == name ? row['id'].to_i : nil]
+      db_items[path] = [false, path == name ? row['id'].to_i : nil, row['status']]
       path << '/'
     end
   end
+  FC::DB.close unless no_reconnect
   
   # walk on all storage folders and files
+  puts "Getting all files" unless silent
   delete_files = []
   process_storage_dir_sync = lambda do |dir = ''|
     Dir.glob(storage.path+dir+'*').each do |f|
       path = f.sub(storage.path, '')
       if db_items[path]
         db_items[path][0] = true
-        next if db_items[path][1]
+        next if db_items[path][1] && db_items[path][2] != 'delete'
       end
       delete_files << path if File.file?(f)
       process_storage_dir_sync.call(path+'/') if File.directory?(f)
@@ -212,24 +221,28 @@ def make_storages_sync(storage, make_delete, silent = false)
   process_storage_dir_sync.call
     
   # rm delete_files
+  FC::DB.connect unless no_reconnect
   if make_delete
+    puts "Deleting files" unless silent
     delete_files.each do |f|
       # check in DB again
-      next if FC::DB.query("SELECT ist.id FROM #{FC::Item.table_name} as i, #{FC::ItemStorage.table_name} as ist WHERE ist.item_id = i.id AND ist.storage_name = '#{storage.name}' AND i.name='#{f}'").first      
+      next if FC::DB.query("SELECT ist.id FROM #{FC::Item.table_name} as i, #{FC::ItemStorage.table_name} as ist WHERE ist.item_id = i.id AND ist.storage_name = '#{storage.name}' AND i.name='#{f}' AND ist.status<>'delete'").first      
       path = storage.path+f
       File.delete(path) rescue nil
     end
+    puts "Deleted #{delete_files.count} files" unless silent
   end
-  puts "Deleted #{delete_files.count} files" unless silent
   
   # delete non synchronize items_storages
+  puts "Deleting items from DB" unless silent
   count = 0  
   db_items.values.each do |item|
-    if !item[0] && item[1] 
+    if !item[0] && item[1] || item[2] == 'delete' && item[1]
       count += 1
       FC::DB.query("DELETE FROM #{FC::ItemStorage.table_name} WHERE id=#{item[1]}") if make_delete
     end
   end
+  FC::DB.close unless no_reconnect
   puts "Deleted #{count} items_storages" unless silent
   
   # delete empty folders
@@ -249,7 +262,7 @@ def make_storages_sync(storage, make_delete, silent = false)
   if (ARGV[4])
     File.open(ARGV[4], 'w') do |file|
       db_items.values.each do |item|
-        file.puts item[1] if !item[0] && item[1]
+        file.puts item[1] if !item[0] && item[1] || item[2] == 'delete' && item[1]
       end
     end
     puts "Save deleted items_storages to #{ARGV[4]}" unless silent
