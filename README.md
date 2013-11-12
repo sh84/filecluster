@@ -40,12 +40,14 @@ Selecting available storage to copy item by storage.copy_storages (from left to 
 |global_daemon_host||set fc_daemon when run global daemon task (only in one instance)|
 |daemon_cycle_time|30|time between global daemon checks and storages available checks|
 |daemon_global_wait_time|120|time between runs global daemon if it does not running|
-|daemon_global_tasks_group_limit|1000|limit for select for tasks|
+|daemon_tasks_copy_group_limit|1000|select limit for copy tasks|
+|daemon_tasks_delete_group_limit|10000|select limit for delete tasks|
+|daemon_tasks_copy_threads_limit|10|copy tasks threads count limit for one storage|
+|daemon_tasks_delete_threads_limit|10|delete tasks threads count limit for one storage|
+|daemon_copy_tasks_per_host_limit|10|copy tasks count limit for one host|
+|daemon_global_tasks_group_limit|1000|select limit for create copy tasks|
 |daemon_global_error_items_ttl|86400|ttl for items with error status before delete|
 |daemon_global_error_items_storages_ttl|86400|ttl for items_storages with error status before delete|
-|daemon_global_tasks_per_thread|10|tasks count for one task thread|
-|daemon_global_tasks_threads_limit|10|tasks threads count limit for one storage|
-|daemon_copy_tasks_limit|10|copy tasks count limit for one host|
 |daemon_restart_period|86400|time between fc-daemon self restart|
 
 ## Usage

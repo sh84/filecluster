@@ -6,22 +6,21 @@ class UpdateTasksThread < BaseThread
   end
   
   def check_tasks(type)
-    storages_names = $storages.map{|storage| "'#{storage.name}'"}.join(',')
-    return if storages_names.empty?
-    cond = "storage_name in (#{storages_names}) AND status='#{type.to_s}'"
-    ids = $tasks.map{|storage_name, storage_tasks| storage_tasks.select{|task| task[:action] == type}}.
-      flatten.map{|task| task[:item_storage].id}
-    ids += $curr_tasks.select{|task| task[:action] == type}.map{|task| task[:item_storage].id}
-    
-    limit = FC::Var.get('daemon_global_tasks_group_limit', 1000).to_i
-    cond << "AND id not in (#{ids.join(',')})" if (ids.length > 0)
-    cond << " LIMIT #{limit}"
-    FC::ItemStorage.where(cond).each do |item_storage|
-      unless ids.include?(item_storage.id)
-        $tasks[item_storage.storage_name] = [] unless $tasks[item_storage.storage_name]
-        $tasks[item_storage.storage_name] << {:action => type, :item_storage => item_storage} 
+    count = 0
+    tasks = (type == :copy ? $tasks_copy : $tasks_delete) 
+    $storages.each do |storage|
+      tasks[storage.name] = [] unless tasks[storage.name]
+      cond = "storage_name = '#{storage.name}' AND status='#{type.to_s}'"
+      ids = tasks[storage.name].map(&:id) + $curr_tasks.map(&:id)
+      limit = FC::Var.get("daemon_tasks_#{type}_group_limit", 1000).to_i
+      cond << "AND id not in (#{ids.join(',')})" if ids.length > 0
+      cond << " LIMIT #{limit}"
+      FC::ItemStorage.where(cond).each do |item_storage|
+        tasks[storage.name] << item_storage 
         $log.debug("task add: type=#{type}, item_storage=#{item_storage.id}")
+        count +=1 
       end
     end
+    $log.debug("Add #{count} #{type} tasks")
   end
 end

@@ -128,7 +128,7 @@ def storages_change
     storage.url = url unless url.empty?
     storage.size_limit = human_to_size(size_limit) unless size_limit.empty?
     storages = FC::Storage.where.map(&:name)
-    copy_storages = copy_storages.split(',').select{|s| storages.member?(s.strip)}.join(',').strip unless copy_storages.empty?
+    storage.copy_storages = copy_storages.split(',').select{|s| storages.member?(s.strip)}.join(',').strip unless copy_storages.empty?
     
     puts %Q{\nStorage
     Name:          #{storage.name}
@@ -137,7 +137,7 @@ def storages_change
     Url:           #{storage.url}
     Size:          #{size_to_human storage.size}
     Size limit:    #{size_to_human storage.size_limit}
-    Copy storages: #{copy_storages}}
+    Copy storages: #{storage.copy_storages}}
     s = Readline.readline("Continue? (y/n) ", false).strip.downcase
     puts ""
     if s == "y" || s == "yes"

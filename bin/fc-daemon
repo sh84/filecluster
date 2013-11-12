@@ -8,16 +8,19 @@ require 'filecluster'
 require 'utils'
 require 'daemon'
 
-$storages       = []          # storages on current host
-$tasks          = {}          # tasks by storage name
-$curr_tasks     = []          # current tasks
-$tasks_threads  = {}          # threads by storage name
-$check_threads  = {}          # threads by storage name
-$copy_count     = 0           # copy tasks count
-$exit_signal    = false 
+$all_storages         = []          # all storages
+$storages             = []          # storages on current host
+$tasks_copy           = {}          # copy tasks by storage name
+$tasks_delete         = {}          # delete tasks by storage name
+$curr_tasks           = []          # current tasks
+$tasks_copy_threads   = {}          # copy threads by storage name
+$tasks_delete_threads = {}          # delete threads by storage name
+$check_threads        = {}          # check threads by storage name
+$copy_count           = 0           # copy tasks count for current host
+$exit_signal          = false 
 $global_daemon_thread = nil
-$update_tasks_thread = nil
-$run_tasks_thread = nil
+$update_tasks_thread  = nil
+$run_tasks_thread     = nil
 
 default_db_config = File.expand_path(File.dirname(__FILE__))+'/db.yml'
 descriptions = {

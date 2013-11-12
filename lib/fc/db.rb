@@ -191,12 +191,14 @@ module FC
       FC::DB.connect.query("CREATE TRIGGER fc_vars_before_update BEFORE UPDATE on #{@prefix}vars FOR EACH ROW BEGIN #{proc_time} END")
       FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_cycle_time', val='30', descr='time between global daemon checks and storages available checks'")
       FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_wait_time', val='120', descr='time between runs global daemon if it does not running'")
-      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_tasks_group_limit', val='1000', descr='limit for select for tasks'")
+      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_tasks_copy_group_limit', val='1000', descr='select limit for copy tasks'")
+      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_tasks_delete_group_limit', val='10000', descr='select limit for delete tasks'")
+      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_tasks_copy_threads_limit', val='10', descr='copy tasks threads count limit for one storage'")
+      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_tasks_delete_threads_limit', val='10', descr='delete tasks threads count limit for one storage'")
+      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_copy_tasks_per_host_limit', val='10', descr='copy tasks count limit for one host'")
+      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_tasks_group_limit', val='1000', descr='select limit for create copy tasks'")
       FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_error_items_ttl', val='86400', descr='ttl for items with error status before delete'")
       FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_error_items_storages_ttl', val='86400', descr='ttl for items_storages with error status before delete'")
-      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_tasks_per_thread', val='10', descr='tasks count for one task thread'")
-      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_tasks_threads_limit', val='10', descr='tasks threads count limit for one storage'")
-      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_copy_tasks_limit', val='10', descr='copy tasks count limit for one host'")
       FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_restart_period', val='86400', descr='time between fc-daemon self restart'")
     end
   end

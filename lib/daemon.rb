@@ -4,7 +4,8 @@ require "daemon/check_thread"
 require "daemon/global_daemon_thread"
 require "daemon/run_tasks_thread"
 require "daemon/update_tasks_thread"
-require "daemon/task_thread"
+require "daemon/copy_task_thread"
+require "daemon/delete_task_thread"
 
 def error(msg, options = {})
   $log.error(msg)
