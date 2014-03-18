@@ -29,17 +29,6 @@ class GlobalDaemonThread < BaseThread
     all_storages = FC::Storage.where
     all_policies = FC::Policy.where
     
-    # policies.get_storages => all_policies.select
-    all_storages.each do |storage|
-      metaclass = class << storage; self; end
-      metaclass.send(:define_method, :get_copy_storages) do
-        self.class.get_copy_storages_mutex.synchronize do
-          @copy_storages_cache ||= self.copy_storages.to_s.split(',').map{|storage_name| all_storages.detect{|s| storage_name == s.name} }
-        end
-        @copy_storages_cache
-      end
-    end
-    
     limit = FC::Var.get('daemon_global_tasks_group_limit', 1000).to_i
     all_policies.each do |policy|
       next if policy.copies.to_i < 2

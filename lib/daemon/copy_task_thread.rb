@@ -4,7 +4,7 @@ class CopyTaskThread < BaseThread
     Thread.current[:tasks_processed] = 0 unless Thread.current[:tasks_processed]
     while task = $tasks_copy[storage_name].shift do
       $curr_tasks << task
-      $log.debug("CopyTaskThread(#{storage_name}): run task for item_storage ##{task.id}")
+      $log.debug("CopyTaskThread(#{storage_name}): run task for item_storage ##{task.id}, copy_count=#{$copy_count}")
       make_copy(task)
       $curr_tasks.delete(task)
       $log.debug("CopyTaskThread(#{storage_name}): finish task for item_storage ##{task.id}")
