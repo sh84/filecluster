@@ -22,6 +22,7 @@ $global_daemon_thread = nil
 $update_tasks_thread  = nil
 $run_tasks_thread     = nil
 
+args = ARGV.clone
 default_db_config = File.expand_path(File.dirname(__FILE__))+'/db.yml'
 descriptions = {
   :config      => {:short => 'c',  :full => 'config',    :default => default_db_config, :text => "path to db.yml file, default #{default_db_config}"},
@@ -53,7 +54,6 @@ trap("TERM") {quit_on_quit}
 trap("INT") {quit_on_quit}
 
 
-
 start_time = Time.new.to_i
 while true do
   if $exit_signal
@@ -66,7 +66,7 @@ while true do
     end
     $log.info('Exit')
     if $exit_signal == :restart
-      exec('ruby', __FILE__)
+      exec('ruby', __FILE__, *args)
     else
       exit
     end
