@@ -103,11 +103,14 @@ class FunctionalTest < Test::Unit::TestCase
     assert_raise(RuntimeError) { item_storage.reload }
   end
   
-  should "item create_from_local check size" do
-    FC::Storage.any_instance.stubs(:copy_path => true, :file_size => 10)
+  should "item create_from_local check md5" do
     errors_count = FC::Error.where.count
-    assert_raise(RuntimeError) { FC::Item.create_from_local(@@test_file_path, 'test5', @@policies[1], {:tag => 'test'}) }
-    assert_equal errors_count+1, FC::Error.where.count, "Error not saved after check size" 
+    @item = FC::Item.create_from_local(@@test_file_path, 'test5', @@policies[0], {:tag => 'test'})
+    item_storage = @item.make_item_storage(@@storages[0], status = 'copy')
+    `dd if=/dev/urandom of=#{@@storages[0].path}#{@item.name} bs=100K count=1 2>&1`
+    #`dd if=/dev/urandom of=#{@@storages[0].path}#{@item.name} bs=100K count=1 2>&1`
+    assert_raise(RuntimeError) { @item.copy_item_storage(@@storages[0], @@storages[1], item_storage) }
+    assert_equal errors_count+1, FC::Error.where.count, "Error not saved after check md5"
   end
   
   should "item create_from_local inplace" do

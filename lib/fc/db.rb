@@ -62,6 +62,7 @@ module FC
           policy_id int NOT NULL,
           dir tinyint(1) NOT NULL DEFAULT 0,
           size bigint NOT NULL DEFAULT 0,
+          md5 varchar(32) DEFAULT NULL,
           status ENUM('new', 'ready', 'error', 'delete') NOT NULL DEFAULT 'new',
           time int DEFAULT NULL,
           copies int NOT NULL DEFAULT 0,

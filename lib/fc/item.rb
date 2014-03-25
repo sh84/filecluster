@@ -3,7 +3,7 @@ require 'shellwords'
 
 module FC
   class Item < DbBase
-    set_table :items, 'name, tag, outer_id, policy_id, dir, size, status, time, copies'
+    set_table :items, 'name, tag, outer_id, policy_id, dir, size, md5, status, time, copies'
     
     # Create item by local path.
     # Additional options: 
@@ -16,20 +16,21 @@ module FC
         :name => item_name.to_s.gsub('//', '/').sub(/\/$/, '').sub(/^\//, '').strip,
         :policy_id => policy.id,
         :dir => File.directory?(local_path),
-        :size => `du -sb #{local_path.shellescape}`.to_i
+        :size => FC::Storage.new(:host => FC::Storage.curr_host).file_size(local_path),
+        :md5 => FC::Storage.new(:host => FC::Storage.curr_host).md5_sum(local_path)
       })
       item_params.delete(:replace)
       item_params.delete(:inplace)
       raise 'Name is empty' if item_params[:name].empty?
       raise 'Zero size path' if item_params[:size] == 0
-      
+
       if local_path.include?(item_name)
-        storage = policy.get_create_storages.detect do |s| 
+        storage = policy.get_create_storages.detect do |s|
           s.host == FC::Storage.curr_host && local_path.index(s.path) == 0 && local_path.sub(s.path, '') == item_params[:name]
         end
         FC::Error.raise "local_path #{local_path} is not valid path for policy ##{policy.id}" unless storage
       end
-      
+
       # new item?
       item = FC::Item.where('name=? AND policy_id=?', item_params[:name], policy.id).first
       if item
@@ -78,7 +79,7 @@ module FC
         else
           storage.copy_path(src, name)
         end
-        size_on_storage = storage.file_size(name)
+        md5_on_storage = storage.md5_sum(name)
       rescue Exception => e
         item_storage.status = 'error'
         item_storage.save
@@ -89,10 +90,10 @@ module FC
         rescue Exception => e
           FC::Error.raise "After copy error: #{e.message}", :item_id => id, :item_storage_id => item_storage.id
         else
-          if size_on_storage != size
+          if md5_on_storage != md5
             item_storage.status = 'error'
             item_storage.save
-            FC::Error.raise "Check size after copy error", :item_id => id, :item_storage_id => item_storage.id
+            FC::Error.raise "Check md5 after copy error", :item_id => id, :item_storage_id => item_storage.id
           else
             item_storage.status = 'ready'
             item_storage.save

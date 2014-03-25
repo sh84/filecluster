@@ -53,14 +53,14 @@ module FC
     # copy local_path to storage
     def copy_path(local_path, file_name)
       dst_path = "#{self.path}#{file_name}"
-      
+
       cmd = "rm -rf #{dst_path.shellescape}; mkdir -p #{File.dirname(dst_path).shellescape}"
       cmd = self.class.curr_host == host ? cmd : "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"#{cmd}\""
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
-      
-      cmd = self.class.curr_host == host ? 
-        "cp -r #{local_path.shellescape} #{dst_path.shellescape}" : 
+
+      cmd = self.class.curr_host == host ?
+        "cp -r #{local_path.shellescape} #{dst_path.shellescape}" :
         "scp -r -oBatchMode=yes -oStrictHostKeyChecking=no #{local_path.shellescape} #{self.host}:\"#{dst_path.shellescape}\""
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
@@ -106,6 +106,16 @@ module FC
       r = ignore_errors ? `#{cmd} 2>/dev/null` : `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
       r.to_i
+    end
+    
+    # return object md5_sum on storage
+    def md5_sum(file_name)
+      dst_path = "#{self.path}#{file_name}"
+      cmd = "find #{dst_path} -type f -exec md5sum {} \\; | awk '{print $1}' | sort | md5sum"
+      cmd = "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"#{cmd}\"" if self.class.curr_host != host
+      r = `#{cmd} 2>&1`
+      raise r if $?.exitstatus != 0
+      r.to_s[0..31]
     end
     
     # get available storage for copy by size
