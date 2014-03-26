@@ -90,7 +90,7 @@ module FC
         rescue Exception => e
           FC::Error.raise "After copy error: #{e.message}", :item_id => id, :item_storage_id => item_storage.id
         else
-          if md5_on_storage != md5
+          if md5 && md5_on_storage != md5
             item_storage.status = 'error'
             item_storage.save
             FC::Error.raise "Check md5 after copy error", :item_id => id, :item_storage_id => item_storage.id
