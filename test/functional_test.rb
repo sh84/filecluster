@@ -6,16 +6,14 @@ class FunctionalTest < Test::Unit::TestCase
       # tmp fake storages dirs
       `rm -rf /tmp/host*-sd*`
       `mkdir -p /tmp/host1-sda/ /tmp/host2-sda/`
-      `rm -rf /tmp/fc_test_dir`
-      `mkdir -p /tmp/fc_test_dir`
       
       # test file to copy
-      @@test_file_path = '/tmp/fc_test_file'
-      `dd if=/dev/urandom of=#{@@test_file_path} bs=100K count=1 2>&1`
-      @@test_dir_path = '/tmp/fc_test_dir'
-      `mkdir -p #{@@test_dir_path}/aaa #{@@test_dir_path}/bbb`
-      `cp #{@@test_file_path} #{@@test_dir_path}/aaa/test1`
-      `cp #{@@test_file_path} #{@@test_dir_path}/bbb/test2`
+      @@test_file_path = '/tmp/fc test_file "~!@#$%^&*()_+|\';'
+      `dd if=/dev/urandom of=#{@@test_file_path.shellescape} bs=100K count=1 2>&1`
+      @@test_dir_path = '/tmp/fc test_dir'
+      `mkdir -p #{@@test_dir_path.shellescape}/aaa #{@@test_dir_path.shellescape}/bbb`
+      `cp #{@@test_file_path.shellescape} #{@@test_dir_path.shellescape}/aaa/test1`
+      `cp #{@@test_file_path.shellescape} #{@@test_dir_path.shellescape}/bbb/test2`
       
       @@storages = []
       @@storages << FC::Storage.new(:name => 'host1-sda', :host => 'host1', :path => '/tmp/host1-sda/', :size_limit => 1000000, :check_time => Time.new.to_i)
@@ -37,9 +35,9 @@ class FunctionalTest < Test::Unit::TestCase
       FC::DB.query("DELETE FROM items")
       FC::DB.query("DELETE FROM policies")
       FC::DB.query("DELETE FROM storages")
-      `rm -rf /tmp/host*-sd*`
-      `rm -rf #{@@test_file_path}`
-      `rm -rf #{@@test_dir_path}`
+      #`rm -rf /tmp/host*-sd*`
+      #`rm -rf #{@@test_file_path.shellescape}`
+      #`rm -rf #{@@test_dir_path.shellescape}`
     end
   end
   
@@ -51,7 +49,7 @@ class FunctionalTest < Test::Unit::TestCase
   should "item create_from_local successful" do
     assert_nothing_raised { @item = FC::Item.create_from_local(@@test_file_path, '/bla/bla/test1', @@policies[0], {:tag => 'test'}) }
     assert_kind_of FC::Item, @item
-    assert_equal `du -sb /tmp/host1-sda/bla/bla/test1 2>&1`.to_i, `du -sb #{@@test_file_path} 2>&1`.to_i
+    assert_equal `du -sb /tmp/host1-sda/bla/bla/test1 2>&1`.to_i, `du -sb #{@@test_file_path.shellescape} 2>&1`.to_i
     assert_equal `du -sb /tmp/host1-sda/bla/bla/test1 2>&1`.to_i, @item.size
     assert_equal 'ready', @item.status
     item_storages = @item.get_item_storages
@@ -65,7 +63,7 @@ class FunctionalTest < Test::Unit::TestCase
     assert_nothing_raised { @item = FC::Item.create_from_local(@@test_dir_path, '/bla/bla/test_dir', @@policies[0], {:tag => 'test_dir'}) }
     assert_kind_of FC::Item, @item
     assert_equal true, @item.dir?
-    assert_equal `du -sb /tmp/host1-sda/bla/bla/test_dir 2>&1`.to_i, `du -sb #{@@test_dir_path} 2>&1`.to_i
+    assert_equal `du -sb /tmp/host1-sda/bla/bla/test_dir 2>&1`.to_i, `du -sb #{@@test_dir_path.shellescape} 2>&1`.to_i
     assert_equal `du -sb /tmp/host1-sda/bla/bla/test_dir 2>&1`.to_i, @item.size
     assert_equal 'ready', @item.status
     item_storages = @item.get_item_storages
@@ -108,14 +106,13 @@ class FunctionalTest < Test::Unit::TestCase
     @item = FC::Item.create_from_local(@@test_file_path, 'test5', @@policies[0], {:tag => 'test'})
     item_storage = @item.make_item_storage(@@storages[0], status = 'copy')
     `dd if=/dev/urandom of=#{@@storages[0].path}#{@item.name} bs=100K count=1 2>&1`
-    #`dd if=/dev/urandom of=#{@@storages[0].path}#{@item.name} bs=100K count=1 2>&1`
     assert_raise(RuntimeError) { @item.copy_item_storage(@@storages[0], @@storages[1], item_storage) }
     assert_equal errors_count+1, FC::Error.where.count, "Error not saved after check md5"
   end
   
   should "item create_from_local inplace" do
-    tmp_file_path = "/tmp/host2-sda/inplace_test"
-    `cp #{@@test_file_path} #{tmp_file_path}`
-    assert_nothing_raised { @item = FC::Item.create_from_local(tmp_file_path, 'inplace_test', @@policies[0]) }
+    tmp_file_path = "/tmp/host2-sda/inplace test"
+    `cp #{@@test_file_path.shellescape} #{tmp_file_path.shellescape}`
+    assert_nothing_raised { @item = FC::Item.create_from_local(tmp_file_path, 'inplace test', @@policies[0]) }
   end
 end

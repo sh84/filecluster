@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourceManagerImpl" format="xml" hash="1862223654">
+    <data-source source="LOCAL" name="Rails webcaster_new: staging" uuid="e4655053-7abc-4c26-8f66-2794db9035cb">
+      <driver-ref>mysql</driver-ref>
+      <jdbc-driver>com.mysql.jdbc.Driver</jdbc-driver>
+      <jdbc-url>jdbc:mysql://127.0.0.1/webcaster</jdbc-url>
+      <user-name>root</user-name>
+      <libraries />
+    </data-source>
+    <data-source source="LOCAL" name="Rails webcaster_new: development" uuid="5be3baf5-ef9f-4cb8-9382-dbb6dc324726">
+      <driver-ref>mysql</driver-ref>
+      <jdbc-driver>com.mysql.jdbc.Driver</jdbc-driver>
+      <jdbc-url>jdbc:mysql://127.0.0.1/webcaster</jdbc-url>
+      <user-name>root</user-name>
+      <libraries />
+    </data-source>
+    <data-source source="LOCAL" name="Rails webcaster_new: test" uuid="36c84f59-3fae-4932-8e07-143c9a927633">
+      <driver-ref>mysql</driver-ref>
+      <jdbc-driver>com.mysql.jdbc.Driver</jdbc-driver>
+      <jdbc-url>jdbc:mysql://127.0.0.1/webcaster_test</jdbc-url>
+      <user-name>root</user-name>
+      <libraries />
+    </data-source>
+    <data-source source="LOCAL" name="Rails webcaster_new: sh" uuid="92f3c1a8-f279-4bda-9898-c3821704ac3d">
+      <driver-ref>mysql</driver-ref>
+      <jdbc-driver>com.mysql.jdbc.Driver</jdbc-driver>
+      <jdbc-url>jdbc:mysql://127.0.0.1/webcaster</jdbc-url>
+      <user-name>root</user-name>
+      <libraries />
+    </data-source>
+    <data-source source="LOCAL" name="Rails webcaster_new: production" uuid="706aaf66-6fbe-4c87-a8f1-e99371a561f4">
+      <driver-ref>mysql</driver-ref>
+      <jdbc-driver>com.mysql.jdbc.Driver</jdbc-driver>
+      <jdbc-url>jdbc:mysql://db.megacdn.ru/webcaster</jdbc-url>
+      <user-name>webcaster</user-name>
+      <user-password>dfcddfc2dfc8dfcedfdedfc4df9cdf9a</user-password>
+      <libraries />
+    </data-source>
+    <data-source source="LOCAL" name="Rails webcaster_new: live" uuid="02808ff6-d8b8-4b7d-a1d6-9d2227997fff">
+      <driver-ref>mysql</driver-ref>
+      <jdbc-driver>com.mysql.jdbc.Driver</jdbc-driver>
+      <jdbc-url>jdbc:mysql://127.0.0.1/webcaster</jdbc-url>
+      <user-name>root</user-name>
+      <libraries />
+    </data-source>
+    <data-source source="LOCAL" name="Rails webcaster_new: production2" uuid="bd63e919-6cba-47e4-9803-7a219cd35cff">
+      <driver-ref>mysql</driver-ref>
+      <jdbc-driver>com.mysql.jdbc.Driver</jdbc-driver>
+      <jdbc-url>jdbc:mysql://db.megacdn.ru/webcaster</jdbc-url>
+      <user-name>webcaster</user-name>
+      <user-password>dfcddfc2dfc8dfcedfdedfc4df9cdf9a</user-password>
+      <libraries />
+    </data-source>
+  </component>
+</project>
+

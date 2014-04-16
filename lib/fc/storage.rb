@@ -112,8 +112,8 @@ module FC
     def md5_sum(file_name)
       dst_path = "#{self.path}#{file_name}"
       cmd = self.class.curr_host == host ?
-          "find #{dst_path} -type f -exec md5sum {} \\; | awk '{print $1}' | sort | md5sum" :
-          "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"find #{dst_path} -type f -exec md5sum {} \\; | awk '{print \\$1}' | sort | md5sum\""
+          "find #{dst_path.shellescape} -type f -exec md5sum {} \\; | awk '{print $1}' | sort | md5sum" :
+          "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"find #{dst_path.shellescape} -type f -exec md5sum {} \\; | awk '{print \\$1}' | sort | md5sum\""
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
       r.to_s[0..31]
