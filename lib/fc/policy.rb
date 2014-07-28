@@ -28,11 +28,16 @@ module FC
       @create_storages_cache
     end
     
-    # get available storage for create by size
-    def get_proper_storage_for_create(size, exclude = [])
-      get_create_storages.detect do |storage|
+    # get available storages for create by size
+    def get_proper_storages_for_create(size, exclude = [])
+      get_create_storages.select do |storage|
         !exclude.include?(storage.name) && storage.up? && storage.size + size < storage.size_limit
       end
+    end
+    
+    # get available storage for create by size
+    def get_proper_storage_for_create(size, exclude = [])
+      get_proper_storages_for_create(size, exclude).first
     end
   end
 end
