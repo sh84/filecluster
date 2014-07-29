@@ -5,6 +5,7 @@ A set of scripts to manage files on multiple dc/host/drive.
 Item (storage unit)- file or folder.
 Storage - folder, usually separate drive.
 Policy - rule for selecting storage to store the item and сreate copies.
+Copy rule - additional rule for copies сreate.
 
 Daemon monitors the availability of each storage and copy files between them.
 
@@ -31,7 +32,20 @@ Selecting available storage to store item by policy.create_storages (from left t
     
 ## Copy policy
 
-Selecting available storage to copy item by storage.copy_storages (from left to right).
+Used first available storage.
+First try copy rules (copy_storages field, from left to right).
+After that storage.copy_storages (from left to right).
+
+Copy rule is ruby expression.
+Can be used the following variables:
+
+* item_id
+* size
+* item_copies
+* name
+* tag
+* dir
+* src_storage (FC::Storage instance)
 
 ## Variables
 

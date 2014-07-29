@@ -180,6 +180,15 @@ module FC
       FC::DB.connect.query("CREATE TRIGGER fc_errors_before_insert BEFORE INSERT on #{@prefix}errors FOR EACH ROW BEGIN #{proc_time} END")
       
       FC::DB.connect.query(%{
+        CREATE TABLE #{@prefix}copy_rules (
+          id int NOT NULL AUTO_INCREMENT,
+          copy_storages text NOT NULL DEFAULT '',
+          rule text DEFAULT NULL,
+          PRIMARY KEY (id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+      })
+      
+      FC::DB.connect.query(%{
         CREATE TABLE #{@prefix}vars (
           name varchar(255) DEFAULT NULL,
           val varchar(255) DEFAULT NULL,

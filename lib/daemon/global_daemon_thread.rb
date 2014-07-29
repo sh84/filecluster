@@ -33,7 +33,7 @@ class GlobalDaemonThread < BaseThread
     all_policies.each do |policy|
       next if policy.copies.to_i < 2
       copies = (1..policy.copies.to_i-1).to_a.join(',')
-      sql = "SELECT i.id as item_id, i.size, i.copies as item_copies, GROUP_CONCAT(ist.storage_name ORDER BY ist.id) as storages "+
+      sql = "SELECT i.id as item_id, i.size, i.copies as item_copies, i.name, i.tag, i.dir, GROUP_CONCAT(ist.storage_name ORDER BY ist.id) as storages "+
         "FROM #{FC::Item.table_name} as i, #{FC::ItemStorage.table_name} as ist WHERE i.policy_id = #{policy.id} AND "+
         "ist.item_id = i.id AND i.copies IN (#{copies}) AND i.status = 'ready' AND ist.status <> 'delete' GROUP BY i.id LIMIT #{limit}"
       r = FC::DB.query(sql)
@@ -46,8 +46,23 @@ class GlobalDaemonThread < BaseThread
           $log.warn("GlobalDaemonThread: ItemStorage count >= policy.copies for item #{row['item_id']}")
         else
           src_storage = all_storages.detect{|s| item_storages.first == s.name}
-          storage = src_storage.get_proper_storage_for_copy(row['size'], item_storages) if src_storage 
+          if src_storage
+            storage = FC::CopyRule.get_proper_storage_for_copy(
+              :item_id     => row['item_id'],
+              :size        => row['size'],
+              :item_copies => row['item_copies'],
+              :name        => row['name'],
+              :tag         => row['tag'],
+              :dir         => row['dir'].to_i == 1,
+              :src_storage => src_storage,
+              :exclude     => item_storages
+            )
+            storage = src_storage.get_proper_storage_for_copy(row['size'], item_storages) unless storage
+          end
           if storage
+            puts row
+            puts src_storage.name+'>'
+            puts storage.name
             FC::Item.new(:id => row['item_id']).make_item_storage(storage, 'copy')
           else
             error 'No available storage', :item_id => row['item_id']

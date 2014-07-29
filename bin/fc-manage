@@ -47,6 +47,16 @@ Command:
    host_info [<host>]  show info for host (default current host)
    items_info          show items statistics       
 }],
+  'copy_rules' => [
+    'show and manage copy rules', 
+    %q{Usage: fc-manage [options] copy_rules <command>
+Command:
+   list                show all copy rules
+   show <id>           show full info for copy rule   
+   add                 add new copy rule
+   rm <id>             delete copy rule
+   change <id>         change copy rules attributes       
+}],
   'var' => [
     'show and change FC::Var', 
     %q{Usage: fc-manage [options] var <command>

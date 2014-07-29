@@ -53,6 +53,9 @@ class DaemonTest < Test::Unit::TestCase
       @@policy = FC::Policy.new(:create_storages => 'host1-sda,host1-sdb,host1-sdc', :copies => 2, :name => 'policy 1')
       @@policy.save
       
+      @@rule = FC::CopyRule.new(:copy_storages => 'host1-sdc', :rule => 'name == "bla/bla/test3"')
+      @@rule.save
+      
       # wait for running fc-daemon
       Timeout::timeout(5) do
         while @stotage_checks < @@storages.size
@@ -77,6 +80,7 @@ class DaemonTest < Test::Unit::TestCase
     @@storages.each {|storage| storage.reload}
     assert @@storages[0].up?, "Storage #{@@storages[0].name} down" 
     assert @@storages[1].up?, "Storage #{@@storages[1].name} down"
+    assert @@storages[2].up?, "Storage #{@@storages[2].name} down"
     
     FC::Storage.any_instance.stubs(:host).returns('host1')
     FC::Storage.stubs(:curr_host).returns('host1')
