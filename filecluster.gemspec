@@ -15,7 +15,6 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
   gem.version       = FC::VERSION
   
-  gem.add_runtime_dependency "readline"
   gem.add_runtime_dependency "mysql2"
   
   gem.add_development_dependency "bundler"
