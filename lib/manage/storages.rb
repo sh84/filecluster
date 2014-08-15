@@ -39,7 +39,7 @@ def storages_add
   path = stdin_read_val('Path')
   url = stdin_read_val('Url')
   size_limit = human_to_size stdin_read_val('Size limit') {|val| "Size limit not is valid size." unless human_to_size(val)}
-  copy_storages = stdin_read_val('Copy storages')
+  copy_storages = stdin_read_val('Copy storages', true)
   storages = FC::Storage.where.map(&:name)
   copy_storages = copy_storages.split(',').select{|s| storages.member?(s.strip)}.join(',').strip
   begin
