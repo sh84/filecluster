@@ -66,7 +66,12 @@ def item_add_local
   puts "Policy #{ARGV[4]} not found." unless policy
   
   if policy && storage
-    path = (storage.path+name).gsub('//', '/') unless name.index(storage.path) == 0
+    if name.index(storage.path) == 0
+      path = name
+      name = name.sub(storage.path, '/').gsub('//', '/')
+    else
+      path = (storage.path+name).gsub('//', '/')
+    end
     begin
       item = FC::Item.create_from_local(path, name, policy, :tag => 'fc-manage-add-local', :replace => true)
       item_storage = item.get_item_storages.first
