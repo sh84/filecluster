@@ -64,6 +64,15 @@ Command:
    list                show all FC::Var-s
    show <variable>     show current value for variable   
    change <variable>   change variable       
+}],
+  'item' => [
+    'show and manage items', 
+    %q{Usage: fc-manage [options] item <command>
+Command:
+   info <name>                                       show item info, name can contain ? and * 
+   add_local <storage name> <path> <policy id/name>  add file in local storage as item (as <path> name) with policy 
+   add <path> <name> <policy id/name>                add file as item <name> with policy
+   rm <name>                                         delete item
 }]
 }
 desc = %q{Get info and manage for storages, policies and items.

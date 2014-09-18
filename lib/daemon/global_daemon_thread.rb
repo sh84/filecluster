@@ -60,9 +60,6 @@ class GlobalDaemonThread < BaseThread
             storage = src_storage.get_proper_storage_for_copy(row['size'], item_storages) unless storage
           end
           if storage
-            puts row
-            puts src_storage.name+'>'
-            puts storage.name
             FC::Item.new(:id => row['item_id']).make_item_storage(storage, 'copy')
           else
             error 'No available storage', :item_id => row['item_id']

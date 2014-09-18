@@ -24,7 +24,7 @@ module FC
       raise 'Name is empty' if item_params[:name].empty?
       raise 'Zero size path' if item_params[:size] == 0
 
-      if local_path.include?(item_name)
+      if local_path.include?(item_name) && !options[:not_local]
         storage = policy.get_create_storages.detect do |s|
           s.host == FC::Storage.curr_host && local_path.index(s.path) == 0 && local_path.sub(s.path, '') == item_params[:name]
         end
