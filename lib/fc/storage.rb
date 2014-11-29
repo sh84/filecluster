@@ -26,6 +26,18 @@ module FC
       super params
     end
     
+    def free
+      size_limit - size
+    end
+    
+    def size_rate
+      size.to_f / size_limit
+    end
+    
+    def free_rate
+      free.to_f / size_limit
+    end
+    
     def get_copy_storages
       self.class.get_copy_storages_mutex.synchronize do
         unless @copy_storages_cache && Time.new.to_i - @get_copy_storages_time.to_i < self.class.storages_cache_time

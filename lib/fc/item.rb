@@ -26,7 +26,7 @@ module FC
 
       if local_path.include?(item_name) && !options[:not_local]
         storage = policy.get_create_storages.detect do |s|
-          s.host == FC::Storage.curr_host && local_path.index(s.path) == 0 && local_path.sub(s.path, '') == item_params[:name]
+          s.host == FC::Storage.curr_host && local_path.index(s.path) == 0 && local_path.sub(s.path, '').sub(/\/$/, '').sub(/^\//, '') == item_params[:name]
         end
         FC::Error.raise "local_path #{local_path} is not valid path for policy ##{policy.id}" unless storage
       end
@@ -48,8 +48,8 @@ module FC
       if storage
         item_storage = item.make_item_storage(storage, 'ready')
         item.reload
-      else 
-        storage = policy.get_proper_storage_for_create(item.size)
+      else
+        storage = policy.get_proper_storage_for_create(item.size, File.realdirpath(local_path))
         FC::Error.raise 'No available storage', :item_id => item.id unless storage
         
         # mark delete item_storages on replace

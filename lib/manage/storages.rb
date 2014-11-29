@@ -8,6 +8,7 @@ def storages_list
   else
     storages.each do |storage|
       str = "#{colorize_string(storage.host, :yellow)} #{storage.name} #{size_to_human(storage.size)}/#{size_to_human(storage.size_limit)} "
+      str += "#{(storage.free_rate*100).to_i}% free "
       str += "#{storage.up? ? colorize_string('UP', :green) : colorize_string('DOWN', :red)}"
       str += " #{storage.check_time_delay} seconds ago" if storage.check_time
       puts str
@@ -23,7 +24,8 @@ def storages_show
   Host:           #{storage.host} 
   Path:           #{storage.path} 
   Url:            #{storage.url}
-  Size:           #{size_to_human storage.size}
+  Size:           #{size_to_human storage.size} (#{(storage.size_rate*100).to_i}%)
+  Free:           #{size_to_human storage.free} (#{(storage.free_rate*100).to_i}%) 
   Size limit:     #{size_to_human storage.size_limit}
   Copy storages:  #{storage.copy_storages}
   Check time:     #{storage.check_time ? "#{Time.at(storage.check_time)} (#{storage.check_time_delay} seconds ago)" : ''}
@@ -53,12 +55,14 @@ def storages_add
     puts "Error: #{e.message}"
     exit
   end
+  free = size_limit - size
   puts %Q{\nStorage
   Name:         #{name}
   Host:         #{host} 
   Path:         #{path} 
   Url:          #{url}
-  Size:         #{size_to_human size}
+  Size:         #{size_to_human size} (#{(size.to_f*100 / size_limit).to_i}%)
+  Free:         #{size_to_human free} (#{(free.to_f*100 / size_limit).to_i}%)
   Size limit:   #{size_to_human size_limit}
   Copy storages #{copy_storages}}
   s = Readline.readline("Continue? (y/n) ", false).strip.downcase
@@ -135,7 +139,8 @@ def storages_change
     Host:          #{storage.host} 
     Path:          #{storage.path} 
     Url:           #{storage.url}
-    Size:          #{size_to_human storage.size}
+    Size:          #{size_to_human storage.size} (#{(storage.size_rate*100).to_i}%)
+    Free:          #{size_to_human storage.free} (#{(storage.free_rate*100).to_i}%)
     Size limit:    #{size_to_human storage.size_limit}
     Copy storages: #{storage.copy_storages}}
     s = Readline.readline("Continue? (y/n) ", false).strip.downcase

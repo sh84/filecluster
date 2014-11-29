@@ -16,11 +16,11 @@ class FunctionalTest < Test::Unit::TestCase
       `cp #{@@test_file_path.shellescape} #{@@test_dir_path.shellescape}/bbb/test2`
       
       @@storages = []
-      @@storages << FC::Storage.new(:name => 'host1-sda', :host => 'host1', :path => '/tmp/host1-sda/', :size_limit => 1000000, :check_time => Time.new.to_i)
-      @@storages << FC::Storage.new(:name => 'host1-sdb', :host => 'host1', :path => '/tmp/host1-sdb/', :size_limit => 1000000, :check_time => Time.new.to_i)
-      @@storages << FC::Storage.new(:name => 'host2-sda', :host => 'host2', :path => '/tmp/host2-sda/', :size_limit => 1000000, :check_time => Time.new.to_i)
-      @@storages << FC::Storage.new(:name => 'host2-sdb', :host => 'host2', :path => '/tmp/host2-sdb/', :size_limit => 1000000, :check_time => Time.new.to_i)
-      @@storages << FC::Storage.new(:name => 'host3-sda', :host => 'host3', :path => '/tmp/host3-sda/', :size_limit => 1000000)
+      @@storages << FC::Storage.new(:name => 'host1-sda', :host => 'host1', :path => '/tmp/host1-sda/', :size => 0, :size_limit => 1000000, :check_time => Time.new.to_i)
+      @@storages << FC::Storage.new(:name => 'host1-sdb', :host => 'host1', :path => '/tmp/host1-sdb/', :size => 0, :size_limit => 1000000, :check_time => Time.new.to_i)
+      @@storages << FC::Storage.new(:name => 'host2-sda', :host => 'host2', :path => '/tmp/host2-sda/', :size => 10, :size_limit => 1000000, :check_time => Time.new.to_i)
+      @@storages << FC::Storage.new(:name => 'host2-sdb', :host => 'host2', :path => '/tmp/host2-sdb/', :size => 10, :size_limit => 1000000, :check_time => Time.new.to_i)
+      @@storages << FC::Storage.new(:name => 'host3-sda', :host => 'host3', :path => '/tmp/host3-sda/', :size => 100, :size_limit => 1000000)
       @@storages.each { |storage| storage.save}
       
       @@policies = []
@@ -113,6 +113,13 @@ class FunctionalTest < Test::Unit::TestCase
   should "item create_from_local inplace" do
     tmp_file_path = "/tmp/host2-sda/inplace test"
     `cp #{@@test_file_path.shellescape} #{tmp_file_path.shellescape}`
-    assert_nothing_raised { @item = FC::Item.create_from_local(tmp_file_path, 'inplace test', @@policies[0]) }
+    assert_nothing_raised { FC::Item.create_from_local(tmp_file_path, 'inplace test', @@policies[0]) }
+  end
+  
+  should "item create_from_local inplace for dir" do
+    tmp_dir_path = "/tmp/host2-sda/inplace test dir/"
+    `mkdir #{tmp_dir_path.shellescape}`
+    `cp #{@@test_file_path.shellescape} #{tmp_dir_path.shellescape}`
+    assert_nothing_raised { FC::Item.create_from_local(tmp_dir_path, '/inplace test dir/', @@policies[0]) }
   end
 end

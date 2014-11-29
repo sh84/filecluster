@@ -69,4 +69,12 @@ class StorageTest < Test::Unit::TestCase
     assert_equal 'rec2-sda', @@storages[2].get_proper_storage_for_copy(20).name, 'second storages up, big file'
     assert_nil @@storages[2].get_proper_storage_for_copy(1000), 'second storages up, huge file'
   end
+  
+  should "free and rate" do
+    storage = @@storages[0]
+    storage.size = 1
+    assert_equal 9, storage.free, 'first storage free must be size_limit - size'
+    assert_equal 9.to_f/10, storage.free_rate, 'first storage free_rate must be free/size_limit' 
+    assert_equal 1.to_f/10, storage.size_rate, 'first storage free must be size/size_limit'
+  end
 end
