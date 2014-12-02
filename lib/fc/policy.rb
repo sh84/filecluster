@@ -38,12 +38,14 @@ module FC
     # get available storage for create by size and local item path
     def get_proper_storage_for_create(size, local_path = nil)
       storages = get_proper_storages_for_create(size)
+      dev = File.stat(local_path).dev if local_path
+      
       # sort by current_host and free size
       storages.sort do |a, b|
         if FC::Storage.curr_host == a.host && FC::Storage.curr_host == b.host
-          if local_path && local_path.index(a.path) == 0
+          if local_path && dev == File.stat(a.path).dev
             1
-          elsif local_path && local_path.index(b.path) == 0
+          elsif local_path && dev == File.stat(b.path).dev
             -1
           else
             a.free_rate <=> b.free_rate

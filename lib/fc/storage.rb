@@ -63,16 +63,17 @@ module FC
     end
     
     # copy local_path to storage
-    def copy_path(local_path, file_name)
+    def copy_path(local_path, file_name, try_move = false)
       dst_path = "#{self.path}#{file_name}"
 
       cmd = "rm -rf #{dst_path.shellescape}; mkdir -p #{File.dirname(dst_path).shellescape}"
       cmd = self.class.curr_host == host ? cmd : "ssh -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"#{cmd}\""
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
-
+      
+      op = try_move && self.class.curr_host == host && File.stat(local_path).dev == File.stat(File.dirname(dst_path)).dev ? 'mv' : 'cp -r'
       cmd = self.class.curr_host == host ?
-        "cp -r #{local_path.shellescape} #{dst_path.shellescape}" :
+        "#{op} #{local_path.shellescape} #{dst_path.shellescape}" :
         "scp -r -oBatchMode=yes -oStrictHostKeyChecking=no #{local_path.shellescape} #{self.host}:\"#{dst_path.shellescape}\""
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0

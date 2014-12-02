@@ -58,16 +58,20 @@ class PolicyTest < Test::Unit::TestCase
     FC::Policy.storages_cache_time = 0
     @@storages.each {|storage| storage.update_check_time}
     FC::Storage.stubs(:curr_host).returns('rec2')
-    assert_equal 'rec2-sdb', @@policy.get_proper_storage_for_create(9, '/tmp/host2-sdb/test').name, 'current host, local path match'
+    File.stubs(:stat).with('test-rec2-sdb').returns(OpenStruct.new :dev => 10)
+    File.stubs(:stat).with('/tmp/host2-sdb/').returns(OpenStruct.new :dev => 10)
+    File.stubs(:stat).with{|s| s != 'test-rec2-sdb' && s != '/tmp/host2-sdb/'}.returns(OpenStruct.new :dev => 0)
+    assert_equal 'rec2-sdb', @@policy.get_proper_storage_for_create(9, 'test-rec2-sdb').name, 'current host, dev match'
     @@storages[3].check_time = 0;
     @@storages[3].save
-    assert_equal 'rec2-sdc', @@policy.get_proper_storage_for_create(9, '/tmp/host2-sdb/test').name, 'current host, most free storage'
+    assert_equal 'rec2-sdc', @@policy.get_proper_storage_for_create(9, 'test-rec2-sdb').name, 'current host, most free storage'
     FC::Storage.stubs(:curr_host).returns('rec3')
     @@storages[5].check_time = 0;
     @@storages[5].save
-    assert_equal 'rec3-sdb', @@policy.get_proper_storage_for_create(9, '/tmp/host3-sdc/test').name, 'current host, single storage'
+    assert_equal 'rec3-sdb', @@policy.get_proper_storage_for_create(9, 'test-rec2-sdb').name, 'current host, single storage'
     FC::Storage.stubs(:curr_host).returns('rec5')
-    assert_equal 'rec1-sda', @@policy.get_proper_storage_for_create(9, '/tmp/host3-sdc/test').name, 'not current host, most free storage'
-    assert_equal 'rec2-sdc', @@policy.get_proper_storage_for_create(10, '/tmp/host3-sdc/test').name, 'not current host, big file, most free storage with free space'
+    assert_equal 'rec1-sda', @@policy.get_proper_storage_for_create(9, 'test-rec2-sdb').name, 'not current host, most free storage'
+    assert_equal 'rec2-sdc', @@policy.get_proper_storage_for_create(10, 'test-rec2-sdb').name, 'not current host, big file, most free storage with free space'
+    File.unstub(:stat)
   end
 end

@@ -8,6 +8,7 @@ module FC
     # Create item by local path.
     # Additional options: 
     #   :replace=true - replace item if it exists
+    #   :remove_local=true - delete local_path file/dir after add
     # If item_name is part of local_path it processed as inplace - local_path is valid path to the item for policy
     def self.create_from_local(local_path, item_name, policy, options={})
       raise 'Path not exists' unless File.exists?(local_path)
@@ -20,7 +21,7 @@ module FC
         :md5 => FC::Storage.new(:host => FC::Storage.curr_host).md5_sum(local_path)
       })
       item_params.delete(:replace)
-      item_params.delete(:inplace)
+      item_params.delete(:remove_local)
       raise 'Name is empty' if item_params[:name].empty?
       raise 'Zero size path' if item_params[:size] == 0
 
@@ -49,14 +50,14 @@ module FC
         item_storage = item.make_item_storage(storage, 'ready')
         item.reload
       else
-        storage = policy.get_proper_storage_for_create(item.size, File.realdirpath(local_path))
+        storage = policy.get_proper_storage_for_create(item.size, local_path)
         FC::Error.raise 'No available storage', :item_id => item.id unless storage
         
         # mark delete item_storages on replace
         FC::DB.query("UPDATE #{FC::ItemStorage.table_name} SET status='delete' WHERE item_id = #{item.id} AND storage_name <> '#{storage.name}'") if options[:replace]          
         
         item_storage = item.make_item_storage(storage)
-        item.copy_item_storage(local_path, storage, item_storage)
+        item.copy_item_storage(local_path, storage, item_storage, options[:remove_local])
       end
       
       return item
@@ -72,12 +73,12 @@ module FC
       item_storage
     end
     
-    def copy_item_storage(src, storage, item_storage)
+    def copy_item_storage(src, storage, item_storage, remove_local = false)
       begin
         if src.instance_of?(FC::Storage)
           src.copy_to_local(name, "#{storage.path}#{name}")
         else
-          storage.copy_path(src, name)
+          storage.copy_path(src, name, remove_local)
         end
         md5_on_storage = storage.md5_sum(name)
       rescue Exception => e
@@ -98,6 +99,7 @@ module FC
             item_storage.status = 'ready'
             item_storage.save
             reload
+            File.delete(src) if remove_local && !src.instance_of?(FC::Storage) && File.exists?(src)
           end
         end
       end

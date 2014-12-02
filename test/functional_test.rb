@@ -122,4 +122,16 @@ class FunctionalTest < Test::Unit::TestCase
     `cp #{@@test_file_path.shellescape} #{tmp_dir_path.shellescape}`
     assert_nothing_raised { FC::Item.create_from_local(tmp_dir_path, '/inplace test dir/', @@policies[0]) }
   end
+  
+  should "item create_from_local with move and delete" do
+    tmp_file_path = "/tmp/fc test file for delete"
+    `cp #{@@test_file_path.shellescape} #{tmp_file_path.shellescape}`
+    File.stubs(:delete).never
+    assert_nothing_raised { @item = FC::Item.create_from_local(tmp_file_path, '/bla/bla/test6', @@policies[0], {:remove_local => true}) }
+    assert_kind_of FC::Item, @item
+    assert_equal `du -sb #{@@test_file_path.shellescape} 2>&1`.to_i, @item.size
+    assert_equal 'ready', @item.status
+    assert_equal false, File.exists?(tmp_file_path)
+    File.unstub(:delete)
+  end
 end
