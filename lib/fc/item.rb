@@ -100,7 +100,7 @@ module FC
             item_storage.save
             reload
             if remove_local && !src.instance_of?(FC::Storage) && File.exists?(src)
-              if File.directory?
+              if File.directory?(src)
                 Dir.delete(src)
               else
                 File.delete(src)
