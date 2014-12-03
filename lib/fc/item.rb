@@ -99,7 +99,13 @@ module FC
             item_storage.status = 'ready'
             item_storage.save
             reload
-            File.delete(src) if remove_local && !src.instance_of?(FC::Storage) && File.exists?(src)
+            if remove_local && !src.instance_of?(FC::Storage) && File.exists?(src)
+              if File.directory?
+                Dir.delete(src)
+              else
+                File.delete(src)
+              end
+            end
           end
         end
       end
