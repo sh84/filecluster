@@ -1,5 +1,6 @@
 # encoding: utf-8
 require 'shellwords'
+require 'fileutils'
 
 module FC
   class Item < DbBase
@@ -101,7 +102,7 @@ module FC
             reload
             if remove_local && !src.instance_of?(FC::Storage) && File.exists?(src)
               if File.directory?(src)
-                Dir.delete(src)
+                FileUtils.rm_r(src)
               else
                 File.delete(src)
               end
