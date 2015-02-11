@@ -58,8 +58,12 @@ start_time = Time.new.to_i
 while true do
   if $exit_signal
     $log.debug('wait tasks_threads')
-    $tasks_copy_threads.each {|t| t.join}
-    $tasks_delete_threads.each {|t| t.join}
+    $tasks_copy_threads.each do|host, tasks| 
+      tasks.each{|t| t.join}
+    end
+    $tasks_delete_threads.each do|host, tasks| 
+      tasks.each{|t| t.join}
+    end
     if $global_daemon_thread
       $log.debug('wait global_daemon_thread')
       $global_daemon_thread.join
