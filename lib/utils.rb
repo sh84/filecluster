@@ -25,9 +25,11 @@ end
 def size_to_human(size)
   return "0" if size == 0
   units = %w{B KB MB GB TB}
+  minus = size < 0
+  size = -1 * size if minus
   e = (Math.log(size)/Math.log(1024)).floor
   s = "%.2f" % (size.to_f / 1024**e)
-  s.sub(/\.?0*$/, units[e])
+  (minus ? '-' : '')+s.sub(/\.?0*$/, units[e])
 end
 
 def human_to_size(size)
