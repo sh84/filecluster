@@ -14,6 +14,10 @@ module FC
       @database_fields = params[:database_fields] || {}
     end
     
+    def to_json(*a)
+      @database_fields.to_json(*a)
+    end
+    
     def self.table_name
       "#{FC::DB.prefix}#{@table_name}"
     end

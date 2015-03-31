@@ -1,0 +1,10 @@
+#!/bin/sh
+BASE_DIR=$(dirname $0)
+BASE_DIR="${BASE_DIR%%bin}rest_server/"
+cd $BASE_DIR
+PIDFILE="server.pid"
+STATEFILE="server.state"
+LISTEN="tcp://0.0.0.0:2379"
+RUN_ARGS=$@
+
+/usr/bin/env RUN_ARGS="${RUN_ARGS}" puma -b $LISTEN --pidfile $PIDFILE --state $STATEFILE -e production

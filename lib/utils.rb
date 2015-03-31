@@ -1,4 +1,4 @@
-def option_parser_init(descriptions, text)
+def option_parser_init(descriptions, text, args=ARGV)
   options = {}
   optparse = OptionParser.new do |opts|
     opts.banner = text
@@ -17,7 +17,7 @@ def option_parser_init(descriptions, text)
       exit
     end
   end
-  optparse.parse!
+  optparse.parse!(args)
   options['optparse'] = optparse
   options
 end

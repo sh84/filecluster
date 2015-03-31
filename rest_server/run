@@ -1,0 +1,6 @@
+#!/bin/sh
+BASE_DIR=$(dirname $0)
+cd $BASE_DIR
+RUN_ARGS=$@
+
+/usr/bin/env RUN_ARGS="${RUN_ARGS}" rerun --signal KILL --dir ../ -- rackup -s webrick --port 2379

@@ -12,6 +12,7 @@ module FC
     #   :remove_local=true - delete local_path file/dir after add
     # If item_name is part of local_path it processed as inplace - local_path is valid path to the item for policy
     def self.create_from_local(local_path, item_name, policy, options={})
+      puts options
       raise 'Path not exists' unless File.exists?(local_path)
       raise 'Policy is not FC::Policy' unless policy.instance_of?(FC::Policy)
       item_params = options.merge({
@@ -45,6 +46,7 @@ module FC
       else
         item = FC::Item.new(item_params)
       end
+      puts item.inspect
       item.save
       
       if storage

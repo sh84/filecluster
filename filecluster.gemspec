@@ -16,10 +16,15 @@ Gem::Specification.new do |gem|
   gem.version       = FC::VERSION
   
   gem.add_runtime_dependency "mysql2"
+  gem.add_runtime_dependency "puma"
+  gem.add_runtime_dependency "rack"
+  gem.add_runtime_dependency "grape"
+  gem.add_runtime_dependency "grape-swagger"
   
   gem.add_development_dependency "bundler"
   gem.add_development_dependency "test-unit"
   gem.add_development_dependency "rake"
   gem.add_development_dependency "shoulda-context"
   gem.add_development_dependency "mocha", ">= 0.13.3"
+  gem.add_development_dependency "rerun"
 end

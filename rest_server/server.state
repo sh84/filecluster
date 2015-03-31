@@ -1,0 +1,22 @@
+---
+pid: 22313
+config: !ruby/object:Puma::Configuration
+  options:
+    :min_threads: 0
+    :max_threads: 16
+    :quiet: false
+    :debug: false
+    :binds:
+    - tcp://0.0.0.0:2379
+    :workers: 0
+    :daemon: false
+    :worker_directory: /home/vhosts/filecluster/rest_server
+    :pidfile: server.pid
+    :state: server.state
+    :environment: production
+    :config_file: 
+    :mode: :http
+    :worker_timeout: 60
+    :worker_shutdown_timeout: 30
+    :control_auth_token: 9fb9f75d17dd7950afc07dbd2e84dbe
+    :tag: rest_server
