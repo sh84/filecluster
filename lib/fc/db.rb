@@ -6,22 +6,25 @@ module FC
     
     def self.connect_by_config(options)
       @options = options.clone
-      @options[:port] = options[:port].to_i if options[:port]
-      @prefix = options[:prefix].to_s if options[:prefix]
-      @connects = {}
+      @options[:port] = @options[:port].to_i if @options[:port]
+      @prefix = @options[:prefix].to_s if @options[:prefix]
+      @connects = {} unless @connects
       @connects[Thread.current.object_id] = Mysql2::Client.new(@options)
     end
     
     def self.connect
+      if !@options && defined?(ActiveRecord::Base) && ActiveRecord::Base.connection
+        connection = ActiveRecord::Base.connection.instance_variable_get(:@connection)
+        @options = connection.query_options.clone
+        @prefix = @options[:prefix].to_s if @options[:prefix]
+        @connects = {} unless @connects
+        @connects[Thread.current.object_id] = connection
+      end
       if @options[:multi_threads]
         @connects[Thread.current.object_id] ||= Mysql2::Client.new(@options)
       else
         @connects.first[1]
       end
-    end
-    
-    def self.connect=(connect, options = {})
-      self.connect_by_config connect.query_options.merge(options).merge(:as => :hash)
     end
     
     def self.close
@@ -37,7 +40,9 @@ module FC
     
     # connect.query with deadlock solution
     def self.query(sql)
-      FC::DB.connect.query(sql)
+      r = FC::DB.connect.query(sql)
+      r = r.each(:as => :hash){} if r
+      r
     rescue Mysql2::Error => e
       if e.message.match('Deadlock found when trying to get lock')
         puts "Deadlock"
@@ -51,7 +56,7 @@ module FC
       else
         raise e
       end
-    end
+    end    
     
     def self.server_time
       FC::DB.query("SELECT UNIX_TIMESTAMP() as curr_time").first['curr_time'].to_i
