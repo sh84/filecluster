@@ -3,12 +3,12 @@ require 'helper'
 class ItemTest < Test::Unit::TestCase
   class << self
     def startup
-      @@item = FC::Item.new(:name => 'test item', :policy_id => 1, :size => 150)
+      @@item = FC::Item.new(:name => '/test item', :policy_id => 1, :size => 150)
       @@item.save
       
       @@storages = []
-      @@storages << FC::Storage.new(:name => 'rec1-sda', :host => 'rec1')
-      @@storages << FC::Storage.new(:name => 'rec2-sda', :host => 'rec2')
+      @@storages << FC::Storage.new(:name => 'rec1-sda', :host => 'rec1', :url => 'http://rec1/sda/')
+      @@storages << FC::Storage.new(:name => 'rec2-sda', :host => 'rec2', :url => 'http://rec2/sda/')
       @@item_storages = @@storages.map do |storage|
         storage.save
         item_storage = FC::ItemStorage.new(:item_id => @@item.id, :storage_name => storage.name, :status => 'ready')
@@ -50,5 +50,12 @@ class ItemTest < Test::Unit::TestCase
     @@storages[0].update_check_time
     assert_equal 1, @@item.get_available_storages.count
     assert_equal @@storages[0].name, @@item.get_available_storages.first.name
+  end
+  
+  should "item urls" do
+    @@storages.each{|s| s.check_time = 0; s.save}
+    assert_equal 0, @@item.urls.count
+    @@storages.each(&:update_check_time)
+    assert_same_elements ["http://rec1/sda/test item", "http://rec2/sda/test item"], @@item.urls
   end
 end

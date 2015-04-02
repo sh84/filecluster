@@ -132,5 +132,13 @@ module FC
         ist.item_id = #{id} AND ist.status='ready' AND ist.storage_name = st.name")
       r.map{|data| FC::Storage.create_from_fiels(data)}.select {|storage| storage.up? }
     end
+    
+    def urls
+      get_available_storages.map{|storage| File.join(storage.url, name)}
+    end
+    
+    def url
+      urls.sample
+    end
   end
 end

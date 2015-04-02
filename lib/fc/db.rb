@@ -12,19 +12,35 @@ module FC
       @connects[Thread.current.object_id] = Mysql2::Client.new(@options)
     end
     
-    def self.connect
-      if !@options && defined?(ActiveRecord::Base) && ActiveRecord::Base.connection
-        connection = ActiveRecord::Base.connection.instance_variable_get(:@connection)
-        @options = connection.query_options.clone
-        @prefix = @options[:prefix].to_s if @options[:prefix]
-        @connects = {} unless @connects
-        @connects[Thread.current.object_id] = connection
+    def self.connect(options = {})
+      if !@options
+        if defined?(ActiveRecord::Base) && ActiveRecord::Base.connection
+          connection = ActiveRecord::Base.connection.instance_variable_get(:@connection)
+          @options = connection.query_options.clone
+          @options.merge!(options)
+          @prefix = @options[:prefix].to_s if @options[:prefix]
+          @connects = {} unless @connects
+          @connects[Thread.current.object_id] = connection
+        else
+          self.connect_by_config(options)
+        end
+      else
+        @options.merge!(options)
       end
       if @options[:multi_threads]
         @connects[Thread.current.object_id] ||= Mysql2::Client.new(@options)
       else
         @connects.first[1]
       end
+    end
+    
+    def self.connect!(options = {})
+      self.connect(options)
+    end
+    
+    # deprecated!
+    def self.connect=(connect, options = {})
+      self.connect_by_config connect.query_options.merge(options).merge(:as => :hash)
     end
     
     def self.close
@@ -220,6 +236,11 @@ module FC
       FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_error_items_ttl', val='86400', descr='ttl for items with error status before delete'")
       FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_error_items_storages_ttl', val='86400', descr='ttl for items_storages with error status before delete'")
       FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_restart_period', val='86400', descr='time between fc-daemon self restart'")
+    end
+    
+    class << self
+      extend Gem::Deprecate
+      deprecate :connect=, :connect!, 2016, 01
     end
   end
 end
