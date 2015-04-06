@@ -42,6 +42,10 @@ module FC
     def self.connect=(connect, options = {})
       self.connect_by_config connect.query_options.merge(options).merge(:as => :hash)
     end
+    class << self
+      extend Gem::Deprecate
+      deprecate :connect=, :connect!, 2016, 01
+    end
     
     def self.close
       if @options[:multi_threads]
@@ -79,7 +83,7 @@ module FC
     end
     
     def self.init_db
-      FC::DB.connect.query(%{
+      FC::DB.query(%{
         CREATE TABLE #{@prefix}items (
           id int NOT NULL AUTO_INCREMENT,
           name varchar(1024) NOT NULL DEFAULT '',
@@ -99,10 +103,10 @@ module FC
       proc_time = %{
         SET NEW.time = UNIX_TIMESTAMP();
       }
-      FC::DB.connect.query("CREATE TRIGGER fc_items_before_insert BEFORE INSERT on #{@prefix}items FOR EACH ROW BEGIN #{proc_time} END")
-      FC::DB.connect.query("CREATE TRIGGER fc_items_before_update BEFORE UPDATE on #{@prefix}items FOR EACH ROW BEGIN #{proc_time} END")
+      FC::DB.query("CREATE TRIGGER fc_items_before_insert BEFORE INSERT on #{@prefix}items FOR EACH ROW BEGIN #{proc_time} END")
+      FC::DB.query("CREATE TRIGGER fc_items_before_update BEFORE UPDATE on #{@prefix}items FOR EACH ROW BEGIN #{proc_time} END")
       
-      FC::DB.connect.query(%{
+      FC::DB.query(%{
         CREATE TABLE #{@prefix}storages (
           id int NOT NULL AUTO_INCREMENT,
           name varchar(255) NOT NULL DEFAULT '',
@@ -129,10 +133,10 @@ module FC
           #{proc}
         END IF;
       }
-      FC::DB.connect.query("CREATE TRIGGER fc_storages_after_delete AFTER DELETE on #{@prefix}storages FOR EACH ROW BEGIN #{proc} END")
-      FC::DB.connect.query("CREATE TRIGGER fc_storages_after_update AFTER UPDATE on #{@prefix}storages FOR EACH ROW BEGIN #{proc_update} END")
+      FC::DB.query("CREATE TRIGGER fc_storages_after_delete AFTER DELETE on #{@prefix}storages FOR EACH ROW BEGIN #{proc} END")
+      FC::DB.query("CREATE TRIGGER fc_storages_after_update AFTER UPDATE on #{@prefix}storages FOR EACH ROW BEGIN #{proc_update} END")
       
-      FC::DB.connect.query(%{
+      FC::DB.query(%{
         CREATE TABLE #{@prefix}policies (
           id int NOT NULL AUTO_INCREMENT,
           name varchar(255) NOT NULL DEFAULT '',
@@ -146,10 +150,10 @@ module FC
         SELECT GROUP_CONCAT(name ORDER BY FIND_IN_SET(name, NEW.create_storages)) INTO @create_storages_list FROM #{@prefix}storages WHERE FIND_IN_SET(name, NEW.create_storages);
         SET NEW.create_storages = @create_storages_list;
       }
-      FC::DB.connect.query("CREATE TRIGGER fc_policies_before_insert BEFORE INSERT on #{@prefix}policies FOR EACH ROW BEGIN #{proc} END")
-      FC::DB.connect.query("CREATE TRIGGER fc_policies_before_update BEFORE UPDATE on #{@prefix}policies FOR EACH ROW BEGIN #{proc} END")
+      FC::DB.query("CREATE TRIGGER fc_policies_before_insert BEFORE INSERT on #{@prefix}policies FOR EACH ROW BEGIN #{proc} END")
+      FC::DB.query("CREATE TRIGGER fc_policies_before_update BEFORE UPDATE on #{@prefix}policies FOR EACH ROW BEGIN #{proc} END")
       
-      FC::DB.connect.query(%{
+      FC::DB.query(%{
         CREATE TABLE #{@prefix}items_storages (
           id int NOT NULL AUTO_INCREMENT,
           item_id int DEFAULT NULL,
@@ -186,13 +190,13 @@ module FC
         #{proc.gsub('NEW', 'OLD')}
         UPDATE #{@prefix}storages SET size=size-@item_size WHERE name = OLD.storage_name;
       }
-      FC::DB.connect.query("CREATE TRIGGER fc_items_storages_before_insert BEFORE INSERT on #{@prefix}items_storages FOR EACH ROW BEGIN #{proc_time} END")
-      FC::DB.connect.query("CREATE TRIGGER fc_items_storages_before_update BEFORE UPDATE on #{@prefix}items_storages FOR EACH ROW BEGIN #{proc_time} END")
-      FC::DB.connect.query("CREATE TRIGGER fc_items_storages_after_update AFTER UPDATE on #{@prefix}items_storages FOR EACH ROW BEGIN #{proc} END")
-      FC::DB.connect.query("CREATE TRIGGER fc_items_storages_after_insert AFTER INSERT on #{@prefix}items_storages FOR EACH ROW BEGIN #{proc_add} END")
-      FC::DB.connect.query("CREATE TRIGGER fc_items_storages_after_delete AFTER DELETE on #{@prefix}items_storages FOR EACH ROW BEGIN #{proc_del} END")
+      FC::DB.query("CREATE TRIGGER fc_items_storages_before_insert BEFORE INSERT on #{@prefix}items_storages FOR EACH ROW BEGIN #{proc_time} END")
+      FC::DB.query("CREATE TRIGGER fc_items_storages_before_update BEFORE UPDATE on #{@prefix}items_storages FOR EACH ROW BEGIN #{proc_time} END")
+      FC::DB.query("CREATE TRIGGER fc_items_storages_after_update AFTER UPDATE on #{@prefix}items_storages FOR EACH ROW BEGIN #{proc} END")
+      FC::DB.query("CREATE TRIGGER fc_items_storages_after_insert AFTER INSERT on #{@prefix}items_storages FOR EACH ROW BEGIN #{proc_add} END")
+      FC::DB.query("CREATE TRIGGER fc_items_storages_after_delete AFTER DELETE on #{@prefix}items_storages FOR EACH ROW BEGIN #{proc_del} END")
       
-      FC::DB.connect.query(%{
+      FC::DB.query(%{
         CREATE TABLE #{@prefix}errors (
           id int NOT NULL AUTO_INCREMENT,
           item_id int DEFAULT NULL,
@@ -203,9 +207,9 @@ module FC
           PRIMARY KEY (id), KEY (item_id), KEY (item_storage_id), KEY (host), KEY (time)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
       })
-      FC::DB.connect.query("CREATE TRIGGER fc_errors_before_insert BEFORE INSERT on #{@prefix}errors FOR EACH ROW BEGIN #{proc_time} END")
+      FC::DB.query("CREATE TRIGGER fc_errors_before_insert BEFORE INSERT on #{@prefix}errors FOR EACH ROW BEGIN #{proc_time} END")
       
-      FC::DB.connect.query(%{
+      FC::DB.query(%{
         CREATE TABLE #{@prefix}copy_rules (
           id int NOT NULL AUTO_INCREMENT,
           copy_storages text NOT NULL DEFAULT '',
@@ -214,7 +218,7 @@ module FC
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
       })
       
-      FC::DB.connect.query(%{
+      FC::DB.query(%{
         CREATE TABLE #{@prefix}vars (
           name varchar(255) DEFAULT NULL,
           val varchar(255) DEFAULT NULL,
@@ -223,24 +227,35 @@ module FC
           PRIMARY KEY (name)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
       })
-      FC::DB.connect.query("CREATE TRIGGER fc_vars_before_insert BEFORE INSERT on #{@prefix}vars FOR EACH ROW BEGIN #{proc_time} END")
-      FC::DB.connect.query("CREATE TRIGGER fc_vars_before_update BEFORE UPDATE on #{@prefix}vars FOR EACH ROW BEGIN #{proc_time} END")
-      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_cycle_time', val='30', descr='time between global daemon checks and storages available checks'")
-      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_wait_time', val='120', descr='time between runs global daemon if it does not running'")
-      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_tasks_copy_group_limit', val='1000', descr='select limit for copy tasks'")
-      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_tasks_delete_group_limit', val='10000', descr='select limit for delete tasks'")
-      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_tasks_copy_threads_limit', val='10', descr='copy tasks threads count limit for one storage'")
-      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_tasks_delete_threads_limit', val='10', descr='delete tasks threads count limit for one storage'")
-      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_copy_tasks_per_host_limit', val='10', descr='copy tasks count limit for one host'")
-      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_tasks_group_limit', val='1000', descr='select limit for create copy tasks'")
-      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_error_items_ttl', val='86400', descr='ttl for items with error status before delete'")
-      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_global_error_items_storages_ttl', val='86400', descr='ttl for items_storages with error status before delete'")
-      FC::DB.connect.query("INSERT INTO #{@prefix}vars SET name='daemon_restart_period', val='86400', descr='time between fc-daemon self restart'")
+      FC::DB.query("CREATE TRIGGER fc_vars_before_insert BEFORE INSERT on #{@prefix}vars FOR EACH ROW BEGIN #{proc_time} END")
+      FC::DB.query("CREATE TRIGGER fc_vars_before_update BEFORE UPDATE on #{@prefix}vars FOR EACH ROW BEGIN #{proc_time} END")
+      FC::DB.query("INSERT INTO #{@prefix}vars SET name='daemon_cycle_time', val='30', descr='time between global daemon checks and storages available checks'")
+      FC::DB.query("INSERT INTO #{@prefix}vars SET name='daemon_global_wait_time', val='120', descr='time between runs global daemon if it does not running'")
+      FC::DB.query("INSERT INTO #{@prefix}vars SET name='daemon_tasks_copy_group_limit', val='1000', descr='select limit for copy tasks'")
+      FC::DB.query("INSERT INTO #{@prefix}vars SET name='daemon_tasks_delete_group_limit', val='10000', descr='select limit for delete tasks'")
+      FC::DB.query("INSERT INTO #{@prefix}vars SET name='daemon_tasks_copy_threads_limit', val='10', descr='copy tasks threads count limit for one storage'")
+      FC::DB.query("INSERT INTO #{@prefix}vars SET name='daemon_tasks_delete_threads_limit', val='10', descr='delete tasks threads count limit for one storage'")
+      FC::DB.query("INSERT INTO #{@prefix}vars SET name='daemon_copy_tasks_per_host_limit', val='10', descr='copy tasks count limit for one host'")
+      FC::DB.query("INSERT INTO #{@prefix}vars SET name='daemon_global_tasks_group_limit', val='1000', descr='select limit for create copy tasks'")
+      FC::DB.query("INSERT INTO #{@prefix}vars SET name='daemon_global_error_items_ttl', val='86400', descr='ttl for items with error status before delete'")
+      FC::DB.query("INSERT INTO #{@prefix}vars SET name='daemon_global_error_items_storages_ttl', val='86400', descr='ttl for items_storages with error status before delete'")
+      FC::DB.query("INSERT INTO #{@prefix}vars SET name='daemon_restart_period', val='86400', descr='time between fc-daemon self restart'")
+      
+      FC::DB.migrations
     end
     
-    class << self
-      extend Gem::Deprecate
-      deprecate :connect=, :connect!, 2016, 01
+    def self.version
+      return 1
+    end
+    
+    def self.migrations
+      next_version = FC::DB.query("SELECT val FROM #{FC::DB.prefix}vars WHERE name='db_version'").first['val'].to_i + 1 rescue 1
+      while self.respond_to?("migrate_#{next_version}")
+        puts "migrate to #{next_version}"
+        self.send("migrate_#{next_version}")
+        FC::DB.query("REPLACE #{FC::DB.prefix}vars SET val=#{next_version}, name='db_version'")
+        next_version += 1
+      end
     end
   end
 end

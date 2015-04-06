@@ -1,12 +1,17 @@
 def option_parser_init(descriptions, text)
-  options = {}
+  options = {
+    :__keys => {}
+  }
   optparse = OptionParser.new do |opts|
     opts.banner = text
     opts.separator "Options:"
     
     descriptions.each_entry do |key, desc|
       options[key] = desc[:default]
-      opts.on("-#{desc[:short]}", "--#{desc[:full]}#{desc[:no_val] ? '' : '='+desc[:full].upcase}", desc[:text]) {|s| options[key] = s }
+      opts.on("-#{desc[:short]}", "--#{desc[:full]}#{desc[:no_val] ? '' : '='+desc[:full].upcase}", desc[:text]) do |s|
+        options[:__keys][key] = s
+        options[key] = s
+      end
     end
     opts.on_tail("-?", "--help", "Show this message") do
       puts opts

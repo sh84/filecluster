@@ -1,6 +1,5 @@
 #!/usr/bin/env rake
 require "bundler/gem_tasks"
-require 'rake/clean'
 require 'rake/testtask'
 
 Rake::TestTask.new do |t|
@@ -8,7 +7,5 @@ Rake::TestTask.new do |t|
   t.test_files = FileList["test/*_test.rb"]
 end
 
-task :default => :post_install
-task :post_install do
-  
-end
+desc "Run tests"
+task :default => :test
