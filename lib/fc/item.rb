@@ -138,7 +138,12 @@ module FC
     end
     
     def url
-      urls.sample
+      available_storages = get_available_storages.select{|storage| storage.weight.to_i >= 0 }
+      # sort by random(weight) 
+      best_storage = available_storages.map{|storage| Kernel.rand(storage.weight.to_i * 100) }.sort.last
+      best_storage = available_storages.sample unless best_storage
+      raise "URL find - no avable storage for item #{id}" unless best_storage
+      File.join(best_storage.url, name)
     end
   end
 end

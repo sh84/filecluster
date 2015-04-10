@@ -3,7 +3,7 @@ require 'shellwords'
 
 module FC
   class Storage < DbBase
-    set_table :storages, 'name, host, path, url, size, size_limit, check_time, copy_storages'
+    set_table :storages, 'name, host, path, url, size, size_limit, check_time, copy_storages, weight'
     
     class << self
       attr_accessor :check_time_limit, :storages_cache_time, :get_copy_storages_mutex

@@ -24,6 +24,7 @@ def storages_show
   Host:           #{storage.host} 
   Path:           #{storage.path} 
   Url:            #{storage.url}
+  Weight:         #{storage.weight}
   Size:           #{size_to_human storage.size} (#{(storage.size_rate*100).to_i}%)
   Free:           #{size_to_human storage.free} (#{(storage.free_rate*100).to_i}%) 
   Size limit:     #{size_to_human storage.size_limit}
@@ -40,6 +41,7 @@ def storages_add
   name = stdin_read_val('Name')
   path = stdin_read_val('Path')
   url = stdin_read_val('Url')
+  weight = stdin_read_val('Weight').to_i
   size_limit = human_to_size stdin_read_val('Size limit') {|val| "Size limit not is valid size." unless human_to_size(val)}
   copy_storages = stdin_read_val('Copy storages', true)
   storages = FC::Storage.where.map(&:name)
@@ -47,7 +49,7 @@ def storages_add
   begin
     path = path +'/' unless path[-1] == '/'
     path = '/' + path unless path[0] == '/'
-    storage = FC::Storage.new(:name => name, :host => host, :path => path, :url => url, :size_limit => size_limit, :copy_storages => copy_storages)
+    storage = FC::Storage.new(:name => name, :host => host, :path => path, :url => url, :size_limit => size_limit, :copy_storages => copy_storages, :weight => weight)
     print "Calc current size.. "
     size = storage.file_size('', true)
     puts "ok"
@@ -61,6 +63,7 @@ def storages_add
   Host:         #{host} 
   Path:         #{path} 
   Url:          #{url}
+  Weight:       #{weight}
   Size:         #{size_to_human size} (#{(size.to_f*100 / size_limit).to_i}%)
   Free:         #{size_to_human free} (#{(free.to_f*100 / size_limit).to_i}%)
   Size limit:   #{size_to_human size_limit}
@@ -117,6 +120,7 @@ def storages_change
     host = stdin_read_val("Host (now #{storage.host})", true)
     path = stdin_read_val("Path (now #{storage.path})", true)
     url = stdin_read_val("Url (now #{storage.url})", true)
+    weight = stdin_read_val("Weight (now #{storage.weight})").to_i
     size_limit = stdin_read_val("Size (now #{size_to_human(storage.size_limit)})", true) {|val| "Size limit not is valid size." if !val.empty? && !human_to_size(val)}
     copy_storages = stdin_read_val("Copy storages (now #{storage.copy_storages})", true)
     
@@ -139,6 +143,7 @@ def storages_change
     Host:          #{storage.host} 
     Path:          #{storage.path} 
     Url:           #{storage.url}
+    Weight:        #{storage.weight}
     Size:          #{size_to_human storage.size} (#{(storage.size_rate*100).to_i}%)
     Free:          #{size_to_human storage.free} (#{(storage.free_rate*100).to_i}%)
     Size limit:    #{size_to_human storage.size_limit}

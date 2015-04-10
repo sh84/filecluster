@@ -29,7 +29,7 @@ class ItemTest < Test::Unit::TestCase
     assert_raise(ArgumentError) { FC::Item.create_from_local '/bla/bla' }
     assert_raise(ArgumentError) { FC::Item.create_from_local '/bla/bla', 'test' }
     assert_raise(RuntimeError) { FC::Item.create_from_local '/bla/bla', 'test', {}}
-    assert_raise(RuntimeError) { FC::Item.create_from_local '/bla/bla/bla', 'test', policy}
+    assert_raise() { FC::Item.create_from_local '/bla/bla/bla', 'test', policy}
   end
   
   should "mark_deleted" do
@@ -47,6 +47,7 @@ class ItemTest < Test::Unit::TestCase
   end
   
   should "item get_available_storages" do
+    @@storages.each{|s| s.check_time = 0; s.save}
     @@storages[0].update_check_time
     assert_equal 1, @@item.get_available_storages.count
     assert_equal @@storages[0].name, @@item.get_available_storages.first.name
@@ -57,5 +58,12 @@ class ItemTest < Test::Unit::TestCase
     assert_equal 0, @@item.urls.count
     @@storages.each(&:update_check_time)
     assert_same_elements ["http://rec1/sda/test item", "http://rec2/sda/test item"], @@item.urls
+  end
+  
+  should "item url - all " do
+    @@storages.each(&:update_check_time)
+    @@storages.each{|s| s.weight = -1; s.save}
+    Kernel.stubs(:rand).with(11).returns(999)
+    assert_raise(RuntimeError) { @@item.url }
   end
 end

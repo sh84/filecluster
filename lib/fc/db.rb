@@ -257,5 +257,9 @@ module FC
         next_version += 1
       end
     end
+    
+    def self.migrate_1
+      FC::DB.query("ALTER TABLE #{@prefix}storages ADD COLUMN weight int NOT NULL DEFAULT 0")
+    end
   end
 end
