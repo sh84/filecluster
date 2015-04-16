@@ -60,10 +60,18 @@ class ItemTest < Test::Unit::TestCase
     assert_same_elements ["http://rec1/sda/test item", "http://rec2/sda/test item"], @@item.urls
   end
   
-  should "item url - all " do
+  should "item url by url_weight" do
     @@storages.each(&:update_check_time)
-    @@storages.each{|s| s.weight = -1; s.save}
-    Kernel.stubs(:rand).with(11).returns(999)
+    @@storages.each{|s| s.url_weight = -1; s.save}
     assert_raise(RuntimeError) { @@item.url }
+    
+    @@storages[0].url_weight = 1
+    @@storages[0].save
+    assert_equal "http://rec1/sda/test item", @@item.url
+    
+    @@storages[1].url_weight = 2
+    @@storages[1].save
+    Kernel.stubs(:rand).returns(1)
+    assert_equal "http://rec2/sda/test item", @@item.url
   end
 end

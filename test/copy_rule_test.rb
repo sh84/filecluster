@@ -75,6 +75,15 @@ class CopyRuleTest < Test::Unit::TestCase
     @@storages[1].update_check_time
     assert_equal 'rec2-sda', FC::CopyRule.get_proper_storage_for_copy(:name => 'test1/test', :size => 5).name, 'second storages up, small file'
     assert_equal 'rec1-sda', FC::CopyRule.get_proper_storage_for_copy(:name => 'test1/test', :size => 20).name, 'second storages up, big file'
-    assert_nil FC::CopyRule.get_proper_storage_for_copy(:name => 'test1/test', :size => 1000), 'second storages up, big file'
+    assert_nil FC::CopyRule.get_proper_storage_for_copy(:name => 'test1/test', :size => 1000), 'second storages up, very big file'
+    @@storages[1].write_weight = 100
+    @@storages[1].save
+    @@storages[2].update_check_time
+    assert_equal 'rec2-sda', FC::CopyRule.get_proper_storage_for_copy(:name => 'test1/test', :size => 1).name, 'all storages up, choose by weight'
+    @@storages[1].write_weight = -1
+    @@storages[1].save
+    @@storages[2].write_weight = -1
+    @@storages[2].save
+    assert_equal 'rec1-sda', FC::CopyRule.get_proper_storage_for_copy(:name => 'test1/test', :size => 20).name, 'all storages up, 2 disabled by weight, work second rule'
   end
 end

@@ -3,7 +3,7 @@ require 'shellwords'
 
 module FC
   class Storage < DbBase
-    set_table :storages, 'name, host, path, url, size, size_limit, check_time, copy_storages, weight'
+    set_table :storages, 'name, host, path, url, size, size_limit, check_time, copy_storages, url_weight, write_weight'
     
     class << self
       attr_accessor :check_time_limit, :storages_cache_time, :get_copy_storages_mutex
@@ -14,6 +14,19 @@ module FC
     
     def self.curr_host
       @uname || @uname = `uname -n`.chomp
+    end
+    
+    def self.select_proper_storage_for_create(storages, size, exclude = [])
+      list = storages.select do |storage|
+        !exclude.include?(storage.name) && storage.up? && storage.size + size < storage.size_limit && storage.write_weight.to_i >= 0
+      end
+      list = yield(list) if block_given?
+      # sort by random(free_rate * write_weight)
+      list.map{ |storage| 
+        [storage, Kernel.rand(storage.free_rate * (storage.write_weight.to_i == 0 ? 0.01 : storage.write_weight.to_i) * 1000000000)] 
+      }.sort{ |a, b|
+        a[1] <=> b[1]
+      }.map{|el| el[0]}.last
     end
     
     def initialize(params = {})
@@ -35,7 +48,8 @@ module FC
     end
     
     def free_rate
-      free.to_f / size_limit
+      rate = free.to_f / size_limit
+      rate < 0 ? 0.0 : rate
     end
     
     def get_copy_storages
@@ -134,9 +148,7 @@ module FC
     
     # get available storage for copy by size
     def get_proper_storage_for_copy(size, exclude = [])
-      get_copy_storages.select do |storage|
-        !exclude.include?(storage.name) && storage.up? && storage.size + size < storage.size_limit
-      end.first
+      FC::Storage.select_proper_storage_for_create(get_copy_storages, size, exclude)
     end
   end
 end

@@ -130,7 +130,7 @@ module FC
     def get_available_storages
       r = FC::DB.query("SELECT st.* FROM #{FC::Storage.table_name} as st, #{FC::ItemStorage.table_name} as ist WHERE 
         ist.item_id = #{id} AND ist.status='ready' AND ist.storage_name = st.name")
-      r.map{|data| FC::Storage.create_from_fiels(data)}.select {|storage| storage.up? }
+      r.map{|data| FC::Storage.create_from_fiels(data)}.select {|storage| storage.up? && storage.url_weight.to_i >= 0}
     end
     
     def urls
@@ -138,9 +138,13 @@ module FC
     end
     
     def url
-      available_storages = get_available_storages.select{|storage| storage.weight.to_i >= 0 }
-      # sort by random(weight) 
-      best_storage = available_storages.map{|storage| Kernel.rand(storage.weight.to_i * 100) }.sort.last
+      available_storages = get_available_storages()
+      # sort by random(url_weight) 
+      best_storage = available_storages.map{ |storage| 
+        [storage, Kernel.rand(storage.url_weight.to_i * 100)] 
+      }.sort{ |a, b|
+        a[1] <=> b[1]
+      }.map{|el| el[0]}.last
       best_storage = available_storages.sample unless best_storage
       raise "URL find - no avable storage for item #{id}" unless best_storage
       File.join(best_storage.url, name)

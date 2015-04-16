@@ -65,6 +65,8 @@ class StorageTest < Test::Unit::TestCase
     assert_equal 'rec1-sda', @@storages[2].get_proper_storage_for_copy(5).name, 'first storages up'
     assert_nil @@storages[2].get_proper_storage_for_copy(20), 'first storage full'
     @@storages[1].update_check_time
+    @@storages[0].write_weight = 100
+    @@storages[0].save
     assert_equal 'rec1-sda', @@storages[2].get_proper_storage_for_copy(5).name, 'second storages up, small file'
     assert_equal 'rec2-sda', @@storages[2].get_proper_storage_for_copy(20).name, 'second storages up, big file'
     assert_nil @@storages[2].get_proper_storage_for_copy(1000), 'second storages up, huge file'

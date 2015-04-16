@@ -30,14 +30,10 @@ module FC
     
     # get available storage for copy
     def self.get_proper_storage_for_copy(options)
-      exclude = options[:exclude] || []
       rules = check_all(options[:item_id].to_i, options[:size].to_i, options[:item_copies].to_i, options[:name].to_s, options[:tag].to_s, options[:dir] ? true : false, options[:src_storage])
       result = nil
-      rules.each do |rule|
-        result = rule.get_copy_storages.select do |storage|
-          !exclude.include?(storage.name) && storage.up? && storage.size + options[:size].to_i < storage.size_limit
-        end.first
-        break if result
+      rules.detect do |rule|
+        result = FC::Storage.select_proper_storage_for_create(rule.get_copy_storages, options[:size].to_i, options[:exclude] || [])
       end
       result
     end

@@ -64,6 +64,10 @@ class PolicyTest < Test::Unit::TestCase
     assert_equal 'rec2-sdb', @@policy.get_proper_storage_for_create(9, 'test-rec2-sdb').name, 'current host, dev match'
     @@storages[3].check_time = 0;
     @@storages[3].save
+    original_rand = Kernel.method(:rand)
+    def Kernel.rand(a)
+      a
+    end
     assert_equal 'rec2-sdc', @@policy.get_proper_storage_for_create(9, 'test-rec2-sdb').name, 'current host, most free storage'
     FC::Storage.stubs(:curr_host).returns('rec3')
     @@storages[5].check_time = 0;
@@ -72,6 +76,14 @@ class PolicyTest < Test::Unit::TestCase
     FC::Storage.stubs(:curr_host).returns('rec5')
     assert_equal 'rec1-sda', @@policy.get_proper_storage_for_create(9, 'test-rec2-sdb').name, 'not current host, most free storage'
     assert_equal 'rec2-sdc', @@policy.get_proper_storage_for_create(10, 'test-rec2-sdb').name, 'not current host, big file, most free storage with free space'
+    @@storages[4].write_weight = -1;
+    @@storages[4].save
+    assert_equal 'rec3-sdb', @@policy.get_proper_storage_for_create(10, 'test-rec2-sdb').name, 'not current host, big file, most weight storage with free space'
+    @@storages[2].write_weight = 10;
+    @@storages[2].save
+    assert_equal 'rec2-sda', @@policy.get_proper_storage_for_create(10, 'test-rec2-sdb').name, 'not current host, big file, most weight storage with free space'
     File.unstub(:stat)
+    Kernel.send(:remove_method, :rand)
+    Kernel.define_singleton_method(:rand, original_rand)
   end
 end

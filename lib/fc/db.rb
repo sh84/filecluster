@@ -82,7 +82,7 @@ module FC
       FC::DB.query("SELECT UNIX_TIMESTAMP() as curr_time").first['curr_time'].to_i
     end
     
-    def self.init_db
+    def self.init_db(silent = false)
       FC::DB.query(%{
         CREATE TABLE #{@prefix}items (
           id int NOT NULL AUTO_INCREMENT,
@@ -241,17 +241,17 @@ module FC
       FC::DB.query("INSERT INTO #{@prefix}vars SET name='daemon_global_error_items_storages_ttl', val='86400', descr='ttl for items_storages with error status before delete'")
       FC::DB.query("INSERT INTO #{@prefix}vars SET name='daemon_restart_period', val='86400', descr='time between fc-daemon self restart'")
       
-      FC::DB.migrations
+      FC::DB.migrations(silent)
     end
     
     def self.version
       return 1
     end
     
-    def self.migrations
+    def self.migrations(silent = false)
       next_version = FC::DB.query("SELECT val FROM #{FC::DB.prefix}vars WHERE name='db_version'").first['val'].to_i + 1 rescue 1
       while self.respond_to?("migrate_#{next_version}")
-        puts "migrate to #{next_version}"
+        puts "migrate to #{next_version}" unless silent
         self.send("migrate_#{next_version}")
         FC::DB.query("REPLACE #{FC::DB.prefix}vars SET val=#{next_version}, name='db_version'")
         next_version += 1
@@ -259,7 +259,8 @@ module FC
     end
     
     def self.migrate_1
-      FC::DB.query("ALTER TABLE #{@prefix}storages ADD COLUMN weight int NOT NULL DEFAULT 0")
+      FC::DB.query("ALTER TABLE #{@prefix}storages ADD COLUMN url_weight int NOT NULL DEFAULT 0")
+      FC::DB.query("ALTER TABLE #{@prefix}storages ADD COLUMN write_weight int NOT NULL DEFAULT 0")
     end
   end
 end
