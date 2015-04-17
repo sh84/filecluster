@@ -67,10 +67,14 @@ module FC
     def make_item_storage(storage, status = 'new')
       # new storage_item?
       item_storage = FC::ItemStorage.where('item_id=? AND storage_name=?', id, storage.name).first
-      item_storage.delete if item_storage
+      if item_storage
+        item_storage.delete 
+        storage.size = storage.size.to_i - size.to_i
+      end
       
       item_storage = FC::ItemStorage.new({:item_id => id, :storage_name => storage.name, :status => status})
       item_storage.save
+      storage.size = storage.size.to_i + size.to_i
       item_storage
     end
     

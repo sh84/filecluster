@@ -15,6 +15,7 @@ class ItemTest < Test::Unit::TestCase
         item_storage.save
         item_storage
       end
+      @@storages << FC::Storage.new(:name => 'rec3-sda', :host => 'rec3', :url => 'http://rec3/sda/')
     end
     def shutdown
       FC::DB.query("DELETE FROM items_storages")
@@ -40,6 +41,12 @@ class ItemTest < Test::Unit::TestCase
       item_storage.reload
       assert_equal 'delete', item_storage.status
     end
+  end
+  
+  should "make_item_storage" do
+    storage_size = @@storages[2].size.to_i
+    assert_kind_of FC::ItemStorage, @@item.make_item_storage(@@storages[2])
+    assert_equal storage_size+@@item.size, @@storages[2].size
   end
   
   should "get_item_storages" do
