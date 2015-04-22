@@ -42,8 +42,8 @@ def storages_add
   name = stdin_read_val('Name')
   path = stdin_read_val('Path')
   url = stdin_read_val('Url')
-  url_weight = stdin_read_val('URL weight').to_i
-  write_weight = stdin_read_val('Write weight').to_i
+  url_weight = stdin_read_val('URL weight', true).to_i
+  write_weight = stdin_read_val('Write weight', true).to_i
   size_limit = human_to_size stdin_read_val('Size limit') {|val| "Size limit not is valid size." unless human_to_size(val)}
   copy_storages = stdin_read_val('Copy storages', true)
   storages = FC::Storage.where.map(&:name)

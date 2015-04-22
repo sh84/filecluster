@@ -35,5 +35,28 @@ module FC
       end
       @all_vars 
     end
+    
+    def self.get_speed_limits
+      limits = {
+        'all' => nil
+      }
+      list = self.get('daemon_copy_speed_per_host_limit', '').to_s
+      limits.merge! Hash[list.split(';;').map{|v| v.split('::')}]
+      limits.each{|host, val| limits[host] = val.to_f > 0 ? val.to_f : nil }
+    end
+    
+    def self.set_speed_limit(host, val)
+      limits = self.get_speed_limits
+      limits[host.to_s] = val.to_f
+      list = limits.map{|h, v| "#{h}::#{v}"}.join(';;')
+      self.set('daemon_copy_speed_per_host_limit', list)
+    end
+    
+    def self.get_current_speed_limit
+      limits = self.get_speed_limits
+      limit = limits[FC::Storage.curr_host]
+      limit = limits['all'] unless limit
+      limit
+    end
   end
 end

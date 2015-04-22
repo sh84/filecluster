@@ -77,7 +77,7 @@ module FC
     end
     
     # copy local_path to storage
-    def copy_path(local_path, file_name, try_move = false)
+    def copy_path(local_path, file_name, try_move = false, speed_limit = nil)
       dst_path = "#{self.path}#{file_name}"
 
       cmd = "rm -rf #{dst_path.shellescape}; mkdir -p #{File.dirname(dst_path).shellescape}"
@@ -86,23 +86,25 @@ module FC
       raise r if $?.exitstatus != 0
       
       op = try_move && self.class.curr_host == host && File.stat(local_path).dev == File.stat(File.dirname(dst_path)).dev ? 'mv' : 'cp -r'
+      speed_limit = (speed_limit * 1000).to_i if speed_limit.to_i > 0
       cmd = self.class.curr_host == host ?
         "#{op} #{local_path.shellescape} #{dst_path.shellescape}" :
-        "scp -r -q -oBatchMode=yes -oStrictHostKeyChecking=no #{local_path.shellescape} #{self.host}:\"#{dst_path.shellescape}\""
+        "scp -r -q -oBatchMode=yes -oStrictHostKeyChecking=no #{speed_limit.to_i > 0 ? '-l '+speed_limit.to_s : ''} #{local_path.shellescape} #{self.host}:\"#{dst_path.shellescape}\""
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
     end
     
     # copy object to local_path
-    def copy_to_local(file_name, local_path)
+    def copy_to_local(file_name, local_path, speed_limit = nil)
       src_path = "#{self.path}#{file_name}"
       
       r = `rm -rf #{local_path.shellescape}; mkdir -p #{File.dirname(local_path).shellescape} 2>&1`
       raise r if $?.exitstatus != 0
       
+      speed_limit = (speed_limit * 1000).to_i if speed_limit.to_i > 0
       cmd = self.class.curr_host == host ? 
         "cp -r #{src_path.shellescape} #{local_path.shellescape}" : 
-        "scp -r -q -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host}:\"#{src_path.shellescape}\" #{local_path.shellescape}"
+        "scp -r -q -oBatchMode=yes -oStrictHostKeyChecking=no #{speed_limit.to_i > 0 ? '-l '+speed_limit.to_s : ''} #{self.host}:\"#{src_path.shellescape}\" #{local_path.shellescape}"
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
     end
@@ -116,6 +118,7 @@ module FC
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
       
+      speed_limit = (speed_limit * 1000).to_i if speed_limit.to_i > 0
       cmd = self.class.curr_host == host ? 
         "ls -la #{dst_path.shellescape}" : 
         "ssh -q -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"ls -la #{dst_path.shellescape}\""

@@ -78,12 +78,12 @@ module FC
       item_storage
     end
     
-    def copy_item_storage(src, storage, item_storage, remove_local = false)
+    def copy_item_storage(src, storage, item_storage, remove_local = false, speed_limit = nil)
       begin
         if src.instance_of?(FC::Storage)
-          src.copy_to_local(name, "#{storage.path}#{name}")
+          src.copy_to_local(name, "#{storage.path}#{name}", speed_limit)
         else
-          storage.copy_path(src, name, remove_local)
+          storage.copy_path(src, name, remove_local, speed_limit)
         end
         md5_on_storage = storage.md5_sum(name)
       rescue Exception => e

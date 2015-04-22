@@ -59,6 +59,7 @@ Can be used the following variables:
 |daemon_tasks_copy_threads_limit|10|copy tasks threads count limit for one storage|
 |daemon_tasks_delete_threads_limit|10|delete tasks threads count limit for one storage|
 |daemon_copy_tasks_per_host_limit|10|copy tasks count limit for one host|
+|daemon_copy_speed_per_host_limit|0|copy tasks speed limit for hosts, change via fc-manage copy_speed|
 |daemon_global_tasks_group_limit|1000|select limit for create copy tasks|
 |daemon_global_error_items_ttl|86400|ttl for items with error status before delete|
 |daemon_global_error_items_storages_ttl|86400|ttl for items_storages with error status before delete|
