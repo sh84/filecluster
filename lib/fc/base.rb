@@ -15,6 +15,7 @@ module FC
     end
     
     def self.table_name
+      FC::DB.connect unless FC::DB.options
       "#{FC::DB.prefix}#{@table_name}"
     end
         
