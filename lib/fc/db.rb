@@ -85,7 +85,7 @@ module FC
     def self.init_db(silent = false)
       FC::DB.query(%{
         CREATE TABLE #{@prefix}items (
-          id int NOT NULL AUTO_INCREMENT,
+          id bigint NOT NULL AUTO_INCREMENT,
           name varchar(1024) NOT NULL DEFAULT '',
           tag varchar(255) DEFAULT NULL,
           outer_id int DEFAULT NULL,
@@ -155,8 +155,8 @@ module FC
       
       FC::DB.query(%{
         CREATE TABLE #{@prefix}items_storages (
-          id int NOT NULL AUTO_INCREMENT,
-          item_id int DEFAULT NULL,
+          id bigint NOT NULL AUTO_INCREMENT,
+          item_id bigint DEFAULT NULL,
           storage_name varchar(255) DEFAULT NULL,
           status ENUM('new', 'copy', 'error', 'ready', 'delete') NOT NULL DEFAULT 'new',
           time int DEFAULT NULL,
@@ -199,8 +199,8 @@ module FC
       FC::DB.query(%{
         CREATE TABLE #{@prefix}errors (
           id int NOT NULL AUTO_INCREMENT,
-          item_id int DEFAULT NULL,
-          item_storage_id int DEFAULT NULL,
+          item_id bigint DEFAULT NULL,
+          item_storage_id bigint DEFAULT NULL,
           host varchar(255) DEFAULT NULL,
           message text DEFAULT NULL,
           time int DEFAULT NULL,
