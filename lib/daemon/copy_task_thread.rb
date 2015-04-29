@@ -4,7 +4,7 @@ class CopyTaskThread < BaseThread
     Thread.current[:tasks_processed] = 0 unless Thread.current[:tasks_processed]
     while task = $tasks_copy[storage_name].shift do
       $curr_tasks << task
-      $log.debug("CopyTaskThread(#{storage_name}): run task for item_storage ##{task.id}, copy_count=#{$copy_count}, copy_speed=#{$copy_speed}")
+      $log.debug("CopyTaskThread(#{storage_name}): run task for item_storage ##{task.id}, copy_count=#{$copy_count}/#{$copy_cont_avg}, copy_speed=#{$copy_speed}")
       make_copy(task)
       $curr_tasks.delete(task)
       $log.debug("CopyTaskThread(#{storage_name}): finish task for item_storage ##{task.id}")
@@ -19,13 +19,18 @@ class CopyTaskThread < BaseThread
     speed_limit = nil
     if limit
       if $copy_count == 0
-        speed_limit = (limit - $copy_speed) / 0.75
+        $copy_speed = 0
+        speed_limit = limit * 0.75
+      elsif $copy_count <= $copy_cont_avg && (speed_limit = limit / $copy_cont_avg) < limit * 1.1 - $copy_speed
       else
-        sleep 0.1 while (speed_limit = (limit - $copy_speed) / ($copy_count + 0.4)) < limit*0.1
+        while (speed_limit = (limit - $copy_speed) * 0.75) < limit*0.1 do
+          sleep 0.1
+        end
       end
     end
     $copy_count += 1
     $copy_speed += speed_limit if speed_limit
+    calc_avg_count()
     
     storage = $storages.detect{|s| s.name == task.storage_name}
     begin
@@ -46,12 +51,16 @@ class CopyTaskThread < BaseThread
     end
     src_storage = $all_storages.detect{|s| s.name == src_item_storage.storage_name}
     $log.debug("Copy from #{src_storage.name} to #{storage.name} #{storage.path}#{item.name}")
-    item.copy_item_storage(src_storage, storage, task, speed_limit)
+    item.copy_item_storage(src_storage, storage, task, false, speed_limit)
   rescue Exception => e
     error "Copy item_storage error: #{e.message}; #{e.backtrace.join(', ')}", :item_id => task.item_id, :item_storage_id => task.id
     $curr_tasks.delete(task)
   ensure 
     $copy_count -= 1 if $copy_count > 0
     $copy_speed -= speed_limit if speed_limit
+  end
+
+  def calc_avg_count
+    $copy_cont_avg = ($copy_count + $copy_cont_avg) / 2.0
   end
 end

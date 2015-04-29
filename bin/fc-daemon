@@ -17,6 +17,7 @@ $tasks_copy_threads   = {}          # copy threads by storage name
 $tasks_delete_threads = {}          # delete threads by storage name
 $check_threads        = {}          # check threads by storage name
 $copy_count           = 0           # copy tasks count for current host
+$copy_cont_avg        = 0           # copy tasks avg count for current host
 $copy_speed           = 0           # copy tasks speed sum for current host
 $exit_signal          = false 
 $global_daemon_thread = nil
