@@ -68,8 +68,8 @@ module FC
         puts "Deadlock"
         sleep 0.1
         self.query(sql)
-      elsif e.message.match('Lost connection to MySQL server during query')
-        puts "Lost connection to MySQL server during query"
+      elsif e.message.match('Lost connection to MySQL server during query') || e.message.match('MySQL server has gone away')
+        puts e.message
         FC::DB.connect.ping
         sleep 0.1
         self.query(sql)
