@@ -7,12 +7,16 @@ class UpdateTasksThread < BaseThread
   
   def check_tasks(type)
     count = 0
+    limit = FC::Var.get("daemon_tasks_#{type}_group_limit", 1000).to_i
     tasks = (type == :copy ? $tasks_copy : $tasks_delete) 
     $storages.each do |storage|
       tasks[storage.name] = [] unless tasks[storage.name]
-      cond = "storage_name = '#{storage.name}' AND status='#{type.to_s}'"
       ids = tasks[storage.name].map(&:id) + $curr_tasks.map(&:id)
-      limit = FC::Var.get("daemon_tasks_#{type}_group_limit", 1000).to_i
+      if ids.length > limit*2
+        $log.debug("Too many (#{ids.length}) #{type} tasks")
+        next
+      end
+      cond = "storage_name = '#{storage.name}' AND status='#{type.to_s}'"
       cond << "AND id not in (#{ids.join(',')})" if ids.length > 0
       cond << " LIMIT #{limit}"
       FC::ItemStorage.where(cond).each do |item_storage|

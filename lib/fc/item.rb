@@ -23,6 +23,7 @@ module FC
       })
       item_params.delete(:replace)
       item_params.delete(:remove_local)
+      item_params.delete(:not_local)
       raise 'Name is empty' if item_params[:name].empty?
       raise 'Zero size path' if item_params[:size] == 0
 

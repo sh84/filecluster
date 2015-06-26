@@ -1,5 +1,6 @@
 # encoding: utf-8
 require 'shellwords'
+require 'fileutils'
 
 module FC
   class Storage < DbBase
@@ -112,17 +113,21 @@ module FC
     # delete object from storage
     def delete_file(file_name)
       dst_path = "#{self.path}#{file_name}"
-      cmd = self.class.curr_host == host ? 
-        "rm -rf #{dst_path.shellescape}" : 
-        "ssh -q -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"rm -rf #{dst_path.shellescape}\""
-      r = `#{cmd} 2>&1`
-      raise r if $?.exitstatus != 0
-      
-      cmd = self.class.curr_host == host ? 
-        "ls -la #{dst_path.shellescape}" : 
-        "ssh -q -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"ls -la #{dst_path.shellescape}\""
-      r = `#{cmd} 2>/dev/null`
-      raise "Path #{dst_path} not deleted" unless r.empty?
+      if self.class.curr_host == host
+        begin
+          File.delete(dst_path)
+        rescue Errno::EISDIR
+          FileUtils.rm_r(dst_path)
+        end
+      else
+        cmd = "ssh -q -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"rm -rf #{dst_path.shellescape}\""
+        r = `#{cmd} 2>&1`
+        raise r if $?.exitstatus != 0
+        
+        cmd = "ssh -q -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"ls -la #{dst_path.shellescape}\""
+        r = `#{cmd} 2>/dev/null`
+        raise "Path #{dst_path} not deleted" unless r.empty?
+      end
     end
     
     # return object size on storage
