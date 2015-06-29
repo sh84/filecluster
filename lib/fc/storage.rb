@@ -118,6 +118,7 @@ module FC
           File.delete(dst_path)
         rescue Errno::EISDIR
           FileUtils.rm_r(dst_path)
+        rescue Errno::ENOENT
         end
       else
         cmd = "ssh -q -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"rm -rf #{dst_path.shellescape}\""
