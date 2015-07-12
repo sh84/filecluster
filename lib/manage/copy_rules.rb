@@ -25,7 +25,7 @@ end
 def copy_rules_add
   puts "Add copy rule"
   copy_storages = stdin_read_val('Copy storages')
-  storages = FC::Storage.where.map(&:name)
+  storages = FC::Storage.all.map(&:name)
   copy_storages = copy_storages.split(',').select{|s| storages.member?(s.strip)}.join(',').strip
   rule_str = stdin_read_val('Rule')
   
@@ -71,7 +71,7 @@ def copy_rules_change
   if rule = find_rule
     puts "Change rule #{rule.id}"
     copy_storages = stdin_read_val("Copy storages (now #{rule.copy_storages})", true)
-    storages = FC::Storage.where.map(&:name)
+    storages = FC::Storage.all.map(&:name)
     rule.copy_storages = copy_storages.split(',').select{|s| storages.member?(s.strip)}.join(',').strip unless copy_storages.empty?
     rule_str = stdin_read_val("Rule (now #{rule.rule})", true)
     rule.rule = rule_str unless rule_str.empty?

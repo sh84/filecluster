@@ -64,7 +64,7 @@ end
 private
 
 def all_hosts
-  FC::Storage.where('1').map(&:host).uniq
+  FC::Storage.all.map(&:host).uniq
 end
 
 def find_host

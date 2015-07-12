@@ -16,6 +16,10 @@ class ItemTest < Test::Unit::TestCase
         item_storage
       end
       @@storages << FC::Storage.new(:name => 'rec3-sda', :host => 'rec3', :url => 'http://rec3/sda/')
+      @@storages << FC::Storage.new(:name => 'rec3-sdb', :host => 'rec3', :url => 'http://rec3/sdb/')
+      @@storages << FC::Storage.new(:name => 'rec3-sdc', :host => 'rec3', :url => 'http://rec3/sdc/')
+      @@storage_group = {}
+      @@storage_group['group_1'] = FC::StorageGroup.new(:name => 'group_1', :storages => '')
     end
     def shutdown
       FC::DB.query("DELETE FROM items_storages")

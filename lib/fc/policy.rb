@@ -3,6 +3,7 @@
 module FC
   class Policy < DbBase
     set_table :policies, 'name, create_storages, copies'
+    validate :create_storages, :as => :storages
     
     class << self
       attr_accessor :storages_cache_time, :get_create_storages_mutex
@@ -12,7 +13,7 @@ module FC
     
     def self.filter_by_host(host = nil)
       host = FC::Storage.curr_host unless host
-      self.where.select do |policy|
+      self.all.select do |policy|
         policy.get_create_storages.detect{|storage| storage.host == host}
       end
     end

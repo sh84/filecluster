@@ -76,17 +76,17 @@ class FunctionalTest < Test::Unit::TestCase
   should "item create_from_local replace" do
     @item  = FC::Item.new(:name => 'test2', :policy_id => @@policies[0].id)
     @item.save
-    errors_count = FC::Error.where.count
+    errors_count = FC::Error.all.count
     assert_raise(RuntimeError, "replace item") { FC::Item.create_from_local(@@test_file_path, 'test2', @@policies[0], {:tag => 'test'}) }
-    assert_equal errors_count+1, FC::Error.where.count, "Error not saved after replace item"
+    assert_equal errors_count+1, FC::Error.all.count, "Error not saved after replace item"
     assert_nothing_raised { @item2 = FC::Item.create_from_local(@@test_file_path, 'test2', @@policies[0], {:replace => true, :tag => 'test'}) }
     assert_equal @item.id, @item2.id, "Item (id1=#{@item.id}, id2=#{@item2.id}) change id after replace"
   end
   
   should "item create_from_local available storage" do
-    errors_count = FC::Error.where.count
+    errors_count = FC::Error.all.count
     assert_raise(RuntimeError, "available storage") { FC::Item.create_from_local(@@test_file_path, 'test3', @@policies[2], {:tag => 'test'}) }
-    assert_equal errors_count+1, FC::Error.where.count, "Error not saved on available storage"
+    assert_equal errors_count+1, FC::Error.all.count, "Error not saved on available storage"
   end
   
   should "item create_from_local delete item_storage" do
@@ -102,12 +102,12 @@ class FunctionalTest < Test::Unit::TestCase
   end
   
   should "item create_from_local check md5" do
-    errors_count = FC::Error.where.count
+    errors_count = FC::Error.all.count
     @item = FC::Item.create_from_local(@@test_file_path, 'test5', @@policies[0], {:tag => 'test'})
     item_storage = @item.make_item_storage(@@storages[0], status = 'copy')
     `dd if=/dev/urandom of=#{@@storages[0].path}#{@item.name} bs=100K count=1 2>&1`
     assert_raise(RuntimeError) { @item.copy_item_storage(@@storages[0], @@storages[1], item_storage) }
-    assert_equal errors_count+1, FC::Error.where.count, "Error not saved after check md5"
+    assert_equal errors_count+1, FC::Error.all.count, "Error not saved after check md5"
   end
   
   should "item create_from_local inplace" do

@@ -11,7 +11,7 @@ end
 
 def policies_show
   if policy = find_policy
-    count = FC::DB.query("SELECT count(*) as cnt FROM #{FC::Item.table_name} WHERE policy_id = #{policy.id}").first['cnt']
+    count = FC::Item.count("policy_id = ?", policy.id)
     puts %Q{Policy
   ID:               #{policy.id}
   Name:             #{policy.name}
@@ -27,7 +27,7 @@ def policies_add
   create_storages = stdin_read_val('Create storages')
   copies = stdin_read_val('Copies').to_i
   
-  storages = FC::Storage.where.map(&:name)
+  storages = FC::Storage.all.map(&:name)
   create_storages = create_storages.split(',').select{|s| storages.member?(s.strip)}.join(',').strip
   
   begin
@@ -75,7 +75,7 @@ def policies_change
     create_storages = stdin_read_val("Create storages (now #{policy.create_storages})", true)
     copies = stdin_read_val("Copies (now #{policy.copies})", true)
     
-    storages = FC::Storage.where.map(&:name)
+    storages = FC::Storage.all.map(&:name)
     create_storages = create_storages.split(',').select{|s| storages.member?(s.strip)}.join(',').strip unless create_storages.empty?
         
     policy.name = name unless name.empty?

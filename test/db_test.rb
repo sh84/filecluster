@@ -79,11 +79,13 @@ class DbTest < Test::Unit::TestCase
     assert_equal 'rec1-sda,rec2-sdd', @policies[1].create_storages, "Policy (id=#{@policies[0].id}) incorrect create_storages"
     assert_equal 'rec1-sda', @policies[2].create_storages, "Policy (id=#{@policies[0].id}) incorrect create_storages"
     
-    assert_raise(Mysql2::Error, 'Create policy with uniq name') { FC::Policy.new(:create_storages => 'bla,test', :name => 'policy 1').save }
-    assert_raise(Mysql2::Error, 'Create policy with incorrect create_storages') { FC::Policy.new(:create_storages => 'bla,test', :name => 'new policy').save }
+#    assert_raise('Create policy with uniq name') { FC::Policy.new(:create_storages => 'bla,test', :name => 'policy 1').save }
+    p = FC::Policy.new(:create_storages => 'bla,test', :name => 'new policy')
+    p.save
+    assert_equal '', p.create_storages, "Create policy with incorrect create_storages"
     
-    assert_raise(Mysql2::Error, 'Change storage name with linked polices') { @storages[0].name = 'blabla'; @storages[0].save }
-    assert_raise(Mysql2::Error, 'Delete storage name with linked polices') { @storages[0].delete }
+    assert_raise('Change storage name with linked polices') { @storages[0].name = 'blabla'; @storages[0].save }
+    assert_raise('Delete storage name with linked polices') { @storages[0].delete }
     assert_nothing_raised { @storages[6].name = 'rec2-sdc-new'; @storages[6].save }
     @storages[3].name = 'rec1-sdd-new' #rec1-sdd
     @storages[3].save
@@ -99,7 +101,9 @@ class DbTest < Test::Unit::TestCase
     @policies[0].save
     @policies[0].reload
     assert_equal 'rec2-sda,rec1-sda', @policies[0].create_storages, "Policy (id=#{@policies[0].id}) incorrect create_storages after change"
-    assert_raise(Mysql2::Error, 'Save empty policy storage') { @policies[0].create_storages = 'blabla'; @policies[0].save }
+#    assert_raise(Mysql2::Error, 'Save empty policy storage') { @policies[0].create_storages = 'blabla'; @policies[0].save }
+тест для можификации/удаления стораджа при существуюющих ist
+тест для copy_storages ??
   end
   
   should "item_storages doubles" do

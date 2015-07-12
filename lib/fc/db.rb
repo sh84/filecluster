@@ -120,21 +120,21 @@ module FC
           PRIMARY KEY (id), UNIQUE KEY (name), KEY (host)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
       })
-      proc = %{
-        # update policy.create_storages on storage delete and update
-        UPDATE #{@prefix}policies, 
-          (SELECT #{@prefix}policies.id, GROUP_CONCAT(#{@prefix}storages.name ORDER BY FIND_IN_SET(#{@prefix}storages.name, create_storages)) as storages FROM #{@prefix}policies LEFT JOIN #{@prefix}storages ON 
-            FIND_IN_SET(#{@prefix}storages.name, create_storages) GROUP BY #{@prefix}policies.id) as policy_create
-        SET #{@prefix}policies.create_storages = policy_create.storages
-        WHERE policy_create.id = #{@prefix}policies.id;
-      }
-      proc_update = %{
-        IF OLD.name <> NEW.name THEN 
-          #{proc}
-        END IF;
-      }
-      FC::DB.query("CREATE TRIGGER fc_storages_after_delete AFTER DELETE on #{@prefix}storages FOR EACH ROW BEGIN #{proc} END")
-      FC::DB.query("CREATE TRIGGER fc_storages_after_update AFTER UPDATE on #{@prefix}storages FOR EACH ROW BEGIN #{proc_update} END")
+#      proc = %{
+#        # update policy.create_storages on storage delete and update
+#        UPDATE #{@prefix}policies, 
+#          (SELECT #{@prefix}policies.id, GROUP_CONCAT(#{@prefix}storages.name ORDER BY FIND_IN_SET(#{@prefix}storages.name, create_storages)) as storages FROM #{@prefix}policies LEFT JOIN #{@prefix}storages ON 
+#            FIND_IN_SET(#{@prefix}storages.name, create_storages) GROUP BY #{@prefix}policies.id) as policy_create
+#        SET #{@prefix}policies.create_storages = policy_create.storages
+#        WHERE policy_create.id = #{@prefix}policies.id;
+#      }
+#      proc_update = %{
+#        IF OLD.name <> NEW.name THEN 
+#          #{proc}
+#        END IF;
+#      }
+#      FC::DB.query("CREATE TRIGGER fc_storages_after_delete AFTER DELETE on #{@prefix}storages FOR EACH ROW BEGIN #{proc} END")
+#      FC::DB.query("CREATE TRIGGER fc_storages_after_update AFTER UPDATE on #{@prefix}storages FOR EACH ROW BEGIN #{proc_update} END")
       
       FC::DB.query(%{
         CREATE TABLE #{@prefix}policies (
@@ -145,13 +145,13 @@ module FC
           PRIMARY KEY (id), UNIQUE KEY (name)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
       })
-      proc = %{
-        # update policy.create_storages on policy change - guarantee valid policy.storages
-        SELECT GROUP_CONCAT(name ORDER BY FIND_IN_SET(name, NEW.create_storages)) INTO @create_storages_list FROM #{@prefix}storages WHERE FIND_IN_SET(name, NEW.create_storages);
-        SET NEW.create_storages = @create_storages_list;
-      }
-      FC::DB.query("CREATE TRIGGER fc_policies_before_insert BEFORE INSERT on #{@prefix}policies FOR EACH ROW BEGIN #{proc} END")
-      FC::DB.query("CREATE TRIGGER fc_policies_before_update BEFORE UPDATE on #{@prefix}policies FOR EACH ROW BEGIN #{proc} END")
+#      proc = %{
+#        # update policy.create_storages on policy change - guarantee valid policy.storages
+#        SELECT GROUP_CONCAT(name ORDER BY FIND_IN_SET(name, NEW.create_storages)) INTO @create_storages_list FROM #{@prefix}storages WHERE FIND_IN_SET(name, NEW.create_storages);
+#        SET NEW.create_storages = @create_storages_list;
+#      }
+#      FC::DB.query("CREATE TRIGGER fc_policies_before_insert BEFORE INSERT on #{@prefix}policies FOR EACH ROW BEGIN #{proc} END")
+#      FC::DB.query("CREATE TRIGGER fc_policies_before_update BEFORE UPDATE on #{@prefix}policies FOR EACH ROW BEGIN #{proc} END")
       
       FC::DB.query(%{
         CREATE TABLE #{@prefix}items_storages (
@@ -262,6 +262,24 @@ module FC
       FC::DB.query("ALTER TABLE #{@prefix}storages ADD COLUMN url_weight int NOT NULL DEFAULT 0")
       FC::DB.query("ALTER TABLE #{@prefix}storages ADD COLUMN write_weight int NOT NULL DEFAULT 0")
       FC::DB.query("INSERT INTO #{@prefix}vars SET name='daemon_copy_speed_per_host_limit', val='', descr='copy tasks speed limit for hosts, change via fc-manage copy_speed'")
+    end
+    
+    def self.migrate_2
+      FC::DB.query(%{
+        CREATE TABLE #{@prefix}storages_groups (
+          id int NOT NULL AUTO_INCREMENT,
+          name varchar(255) DEFAULT NULL,
+          storages text NOT NULL DEFAULT '',
+          PRIMARY KEY (id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+      })
+    end
+
+    def self.migrate_3
+      FC::DB.query('drop trigger if exists fc_storages_after_delete')
+      FC::DB.query('drop trigger if exists fc_storages_after_update')
+      FC::DB.query('drop trigger if exists fc_policies_before_insert')
+      FC::DB.query('drop trigger if exists fc_policies_before_update')
     end
   end
 end

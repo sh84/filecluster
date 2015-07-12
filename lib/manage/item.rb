@@ -1,7 +1,7 @@
 def item_info
   name = ARGV[2] || ''
   name = name.gsub('_', '\\_').gsub('%', '\\%').gsub('?', '_').gsub('*', '%')
-  count = FC::DB.query("SELECT count(*) as cnt FROM #{FC::Item.table_name} WHERE name like '#{name}'").first['cnt']
+  count = FC::Item.count("name like '#{name}'")
   puts "Find #{count} items:"
   if (count > 1)
     items = FC::DB.query("SELECT name FROM #{FC::Item.table_name} WHERE name like '#{name}' ORDER BY id DESC LIMIT 100")

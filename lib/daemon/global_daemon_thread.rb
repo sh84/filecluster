@@ -84,7 +84,7 @@ class GlobalDaemonThread < BaseThread
   def make_deleted_error_items_storages
     $log.debug("GlobalDaemonThread: make_deleted_error_items_storages")
     ttl = FC::Var.get('daemon_global_error_items_storages_ttl', 86400).to_i
-    cnt = FC::DB.query("SELECT count(*) as cnt FROM #{FC::ItemStorage.table_name} WHERE status IN ('error', 'copy') AND time < #{Time.new.to_i - ttl}").first['cnt']
+    cnt = FC::ItemStorage.count("status IN ('error', 'copy') AND time < #{Time.new.to_i - ttl}")
     $log.debug("GlobalDaemonThread: mark deleted #{cnt} items storages")
     FC::DB.query("UPDATE #{FC::ItemStorage.table_name} SET status = 'delete' WHERE status IN ('error', 'copy') AND time < #{Time.new.to_i - ttl}")
   end
@@ -92,7 +92,7 @@ class GlobalDaemonThread < BaseThread
   def make_deleted_error_items
     $log.debug("GlobalDaemonThread: make_deleted_error_items")
     ttl = FC::Var.get('daemon_global_error_items_ttl', 86400).to_i
-    cnt = FC::DB.query("SELECT count(*) as cnt FROM #{FC::Item.table_name} WHERE status = 'error' AND time < #{Time.new.to_i - ttl}").first['cnt']
+    cnt = FC::Item.count("status = 'error' AND time < #{Time.new.to_i - ttl}")
     $log.debug("GlobalDaemonThread: mark deleted #{cnt} items")
     FC::DB.query("UPDATE #{FC::Item.table_name} SET status = 'delete' WHERE status = 'error' AND time < #{Time.new.to_i - ttl}")
   end

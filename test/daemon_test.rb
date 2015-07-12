@@ -15,7 +15,7 @@ class DaemonTest < Test::Unit::TestCase
         f.write(FC::DB.options.to_yaml)
       end
       
-      @@errors_count = FC::Error.where.count
+      @@errors_count = FC::Error.all.count
       
       FC::Var.set('daemon_cycle_time', 1)
       FC::Var.set('daemon_global_wait_time', 1)
@@ -98,7 +98,7 @@ class DaemonTest < Test::Unit::TestCase
         assert_equal `du -sb /tmp/host1-sda/bla/bla/test$i 2>&1`.to_i, `du -sb /tmp/host$i-sd$j/bla/bla/test$i 2>&1`.to_i
       end
     end
-    assert_equal @@errors_count, FC::Error.where.count, "new errors in errors table"
+    assert_equal @@errors_count, FC::Error.all.count, "new errors in errors table"
     
     @@policy.copies = 2
     @@policy.save
@@ -107,7 +107,7 @@ class DaemonTest < Test::Unit::TestCase
     item_storage.save
     sleep 2
     assert_equal 0, `du -sb /tmp/host1-sdc/bla/bla/test1 2>&1`.to_i
-    assert_equal @@errors_count, FC::Error.where.count, "new errors in errors table"
+    assert_equal @@errors_count, FC::Error.all.count, "new errors in errors table"
     
     @item1.mark_deleted
     FC::ItemStorage.where('item_id = ?', @item2.id).each do |item_storage|
@@ -122,6 +122,6 @@ class DaemonTest < Test::Unit::TestCase
     assert_equal 0, FC::ItemStorage.where('item_id = ?', @item2.id).count, "ItemStorages not deleted after status='error'"
     @item3.reload
     assert_equal 'delete', @item3.status, "ItemStorages not deleted after status='error'"    
-    assert_equal @@errors_count, FC::Error.where.count, "new errors in errors table"
+    assert_equal @@errors_count, FC::Error.all.count, "new errors in errors table"
   end
 end

@@ -18,8 +18,8 @@ Gem::Specification.new do |gem|
   gem.add_runtime_dependency "mysql2"
   
   gem.add_development_dependency "bundler"
-  gem.add_development_dependency "test-unit"
+  gem.add_development_dependency "minitest"
+  gem.add_development_dependency "minitest-great_expectations"
   gem.add_development_dependency "rake"
-  gem.add_development_dependency "shoulda-context"
   gem.add_development_dependency "mocha", ">= 0.13.3"
 end

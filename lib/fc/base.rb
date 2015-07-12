@@ -5,7 +5,7 @@ module FC
     attr_accessor :id, :database_fields
     
     class << self
-      attr_accessor :table_name, :table_fields
+      attr_accessor :table_name, :table_fields, :validates, :before_saves, :after_saves
     end
     
     def initialize(params = {})
@@ -47,9 +47,22 @@ module FC
       r = FC::DB.query(sql)
       r.map{|data| self.create_from_fiels(data)}
     end
+
+    # get elements count by sql condition (possibles '?' placeholders)
+    def self.count(cond = "1", *params)
+      i = -1
+      sql = "SELECT count(*) as cnt FROM #{self.table_name} WHERE #{cond.gsub('?'){i+=1; "'#{Mysql2::Client.escape(params[i].to_s)}'"}}"
+      FC::DB.query(sql).first['cnt']
+    end
+    
+    # get all elements array
+    def self.all
+      self.where
+    end
     
     # save changed fields
     def save
+      self.validate!
       sql = @id.to_i != 0 ? "UPDATE #{self.class.table_name} SET " : "INSERT IGNORE INTO #{self.class.table_name} SET "
       fields = []
       self.class.table_fields.each do |key|
@@ -62,10 +75,12 @@ module FC
         end
       end
       if fields.length > 0
+        call_saves(self.class.before_saves)
         sql << fields.join(',')
         sql << " WHERE id=#{@id.to_i}" if @id
         FC::DB.query(sql)
         @id = FC::DB.connect.last_id unless @id
+        call_saves(self.class.after_saves)
         self.class.table_fields.each do |key|
           @database_fields[key] = self.send(key)
         end
@@ -82,7 +97,58 @@ module FC
 
     # delete object from DB
     def delete
+      call_saves(self.class.before_saves, true)
       FC::DB.query("DELETE FROM #{self.class.table_name} WHERE id=#{@id.to_i}") if @id
+      call_saves(self.class.after_saves, true)
+    end
+
+    def self.validate(field, params={})
+      raise "validate without :as" unless params[:as]
+      @validates = [] unless @validates
+      @validates << params.merge(:field => field)
+    end
+
+    def validate!
+      if self.class.validates 
+        self.class.validates.each do |v|
+          val = self.send(v[:field])
+          new_val = val
+          if v[:as] == :storages
+            storages ||= FC::Storage.all.map(&:name)
+            new_val = val.gsub(/^\s*|\s*$/, '').split(/\s*\,\s*/).delete_if do |s|
+              !storages.include?(s)
+            end.join(',')
+            puts "#{val} - #{new_val}"
+          end
+          self.send("#{v[:field]}=", new_val) if new_val != val
+        end
+      end
+    end
+    
+    def self.before_save(field = nil, &block)
+      @before_saves = [] unless @before_saves
+      @before_saves << [field, block] if block
+    end    
+    
+    def self.after_save(field = nil, &block)
+      @after_saves = [] unless @after_saves
+      @after_saves << [field, block] if block
+    end
+    
+    private
+    
+    def call_saves(list, is_delete = false)
+      if list 
+        list.each do |s|
+          if s[0] && !is_delete
+            old_val = @database_fields[s[0].to_s]
+            val = self.send(s[0].to_s)
+            s[1].call(old_val) if old_val && old_val != val
+          else
+            s[1].call
+          end
+        end
+      end
     end
     
   end

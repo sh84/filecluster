@@ -18,7 +18,7 @@ end
 
 def storages_show
   if storage = find_storage
-    count = FC::DB.query("SELECT count(*) as cnt FROM #{FC::ItemStorage.table_name} WHERE storage_name='#{Mysql2::Client.escape(storage.name)}'").first['cnt']
+    count = FC::ItemStorage.count("storage_name=?", storage.name)
     puts %Q{Storage
   Name:           #{storage.name}
   Host:           #{storage.host} 
@@ -46,7 +46,7 @@ def storages_add
   write_weight = stdin_read_val('Write weight', true).to_i
   size_limit = human_to_size stdin_read_val('Size limit') {|val| "Size limit not is valid size." unless human_to_size(val)}
   copy_storages = stdin_read_val('Copy storages', true)
-  storages = FC::Storage.where.map(&:name)
+  storages = FC::Storage.all.map(&:name)
   copy_storages = copy_storages.split(',').select{|s| storages.member?(s.strip)}.join(',').strip
   begin
     path = path +'/' unless path[-1] == '/'
@@ -141,7 +141,7 @@ def storages_change
     storage.url_weight = url_weight.to_i unless url_weight.empty?
     storage.write_weight = write_weight.to_i unless write_weight.empty?
     storage.size_limit = human_to_size(size_limit) unless size_limit.empty?
-    storages = FC::Storage.where.map(&:name)
+    storages = FC::Storage.all.map(&:name)
     storage.copy_storages = copy_storages.split(',').select{|s| storages.member?(s.strip)}.join(',').strip unless copy_storages.empty?
     
     puts %Q{\nStorage
