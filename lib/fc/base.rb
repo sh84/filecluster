@@ -19,7 +19,7 @@ module FC
       "#{FC::DB.prefix}#{@table_name}"
     end
         
-    # define table name and fields
+    # define table name and fieldsp
     def self.set_table(name, fields)
       @table_name = name
       self.table_fields = fields.split(',').map{|e| e.gsub(' ','')}
@@ -60,6 +60,27 @@ module FC
       self.where
     end
     
+    # save all fields without validates & savers
+    def save
+      sql = @id.to_i != 0 ? "UPDATE #{self.class.table_name} SET " : "INSERT IGNORE INTO #{self.class.table_name} SET "
+      fields = []
+      self.class.table_fields.each do |key|
+        val = self.send(key)
+        val = 1 if val == true
+        val = 0 if val == false
+        fields << "#{key}=#{val ? (val.class == String ? "'#{FC::DB.connect.escape(val)}'" : val.to_i) : 'NULL'}"
+      end
+      if fields.length > 0
+        sql << fields.join(',')
+        sql << " WHERE id=#{@id.to_i}" if @id
+        FC::DB.query(sql)
+        @id = FC::DB.connect.last_id unless @id
+        self.class.table_fields.each do |key|
+          @database_fields[key] = self.send(key)
+        end
+      end
+    end
+    
     # save changed fields
     def save
       self.validate!
@@ -94,6 +115,11 @@ module FC
       self.database_fields = new_obj.database_fields
       self.class.table_fields.each {|key| self.send("#{key}=", new_obj.send(key)) }
     end
+    
+    # delete object from DB without savers
+    def delete!
+      FC::DB.query("DELETE FROM #{self.class.table_name} WHERE id=#{@id.to_i}") if @id
+    end
 
     # delete object from DB
     def delete
@@ -101,13 +127,22 @@ module FC
       FC::DB.query("DELETE FROM #{self.class.table_name} WHERE id=#{@id.to_i}") if @id
       call_saves(self.class.after_saves, true)
     end
-
+    
+    # class method - dsl
     def self.validate(field, params={})
+      puts "validate #{field}"
       raise "validate without :as" unless params[:as]
       @validates = [] unless @validates
       @validates << params.merge(:field => field)
+      # all validates save to FC::DbBase
+      if self.superclass == FC::DbBase
+        FC::DbBase.validates = {} unless FC::DbBase.validates
+        FC::DbBase.validates[params[:as].to_sym] = [] unless FC::DbBase.validates[params[:as].to_sym]
+        FC::DbBase.validates[params[:as].to_sym] << params.merge(:field => field, :klass => self)
+      end
     end
-
+    
+    # called on save and delete, or manually
     def validate!
       if self.class.validates 
         self.class.validates.each do |v|
@@ -118,7 +153,6 @@ module FC
             new_val = val.gsub(/^\s*|\s*$/, '').split(/\s*\,\s*/).delete_if do |s|
               !storages.include?(s)
             end.join(',')
-            puts "#{val} - #{new_val}"
           end
           self.send("#{v[:field]}=", new_val) if new_val != val
         end
@@ -138,14 +172,15 @@ module FC
     private
     
     def call_saves(list, is_delete = false)
-      if list 
+      if list
         list.each do |s|
-          if s[0] && !is_delete
-            old_val = @database_fields[s[0].to_s]
-            val = self.send(s[0].to_s)
-            s[1].call(old_val) if old_val && old_val != val
+          field, block = s
+          if field
+            old_val = @database_fields[field.to_s]
+            val = self.send(field.to_s)
+            block.call(old_val, is_delete) if old_val && old_val != val
           else
-            s[1].call
+            block.call(nil, is_delete)
           end
         end
       end

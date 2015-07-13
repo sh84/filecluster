@@ -3,6 +3,7 @@
 module FC
   class CopyRule < DbBase
     set_table :copy_rules, 'rule, copy_storages'
+    validate :copy_storages, :as => :storages
     
     class << self
       attr_accessor :rules_cache_time, :get_rules_mutex, :copy_storages_cache_time, :get_copy_storages_mutex

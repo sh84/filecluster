@@ -4,13 +4,19 @@ require 'shellwords'
 module FC
   class Storage < DbBase
     set_table :storages, 'name, host, path, url, size, size_limit, check_time, copy_storages, url_weight, write_weight'
-    before_save(:name) do |old_name|
-      puts "before_save #{old_name}"
+    validate :copy_storages, :as => :storages
+    
+    before_save(:name) do |old_name, is_delete|
       cnt = FC::ItemStorage.count("storage_name = ?", old_name)
-      raise "#{cnt} items storages for storage #{old_name}" if cnt > 0
+      raise "Can't #{is_delete ? 'delete' : 'change'} storage #{old_name} because #{cnt} items storages" if cnt > 0
     end
     after_save(:name) do
-      FC::Policy.all.each{|p| p.save}
+      # resave (for validate) all :storages type fields
+      if FC::DbBase.validates[:storages]
+        FC::DbBase.validates[:storages].each do |saver|
+          saver[:klass].all.each{|el| el.save}
+        end
+      end
     end
     
     class << self
