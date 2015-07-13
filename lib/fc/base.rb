@@ -60,8 +60,15 @@ module FC
       self.where
     end
     
+    # new and save
+    def self.create(params = {})
+      item = self.new(params)
+      item.save
+      item
+    end
+    
     # save all fields without validates & savers
-    def save
+    def save!
       sql = @id.to_i != 0 ? "UPDATE #{self.class.table_name} SET " : "INSERT IGNORE INTO #{self.class.table_name} SET "
       fields = []
       self.class.table_fields.each do |key|
@@ -130,7 +137,6 @@ module FC
     
     # class method - dsl
     def self.validate(field, params={})
-      puts "validate #{field}"
       raise "validate without :as" unless params[:as]
       @validates = [] unless @validates
       @validates << params.merge(:field => field)

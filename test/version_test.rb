@@ -1,7 +1,7 @@
 require 'helper'
 
-class VersionTest < Test::Unit::TestCase
-  should "version exist" do
-      assert FC::VERSION
+class VersionTest < FC::TestCase
+  def test_version_exist
+    assert FC::VERSION
   end
 end
