@@ -2,7 +2,7 @@ require 'mysql2'
 
 module FC
   module DB
-    class << self; attr_accessor :options, :prefix end
+    class << self; attr_accessor :options, :prefix, :err_counter end
     
     def self.connect_by_config(options)
       @options = options.clone
@@ -60,10 +60,13 @@ module FC
     
     # connect.query with deadlock solution
     def self.query(sql)
+      raise 'Too many mysql errors' if FC::DB.err_counter && FC::DB.err_counter > 10
       r = FC::DB.connect.query(sql)
+      FC::DB.err_counter = 0
       r = r.each(:as => :hash){} if r
       r
     rescue Mysql2::Error => e
+      FC::DB.err_counter = FC::DB.err_counter.to_i + 1
       if e.message.match('Deadlock found when trying to get lock')
         puts "Deadlock"
         sleep 0.1
