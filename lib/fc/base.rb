@@ -2,7 +2,7 @@
 
 module FC
   class DbBase
-    attr_accessor :id, :database_fields
+    attr_accessor :id, :database_fields, :additional_fields
     
     class << self
       attr_accessor :table_name, :table_fields
@@ -12,6 +12,7 @@ module FC
       self.class.table_fields.each {|key| self.send("#{key}=", params[key] || params[key.to_sym]) }
       @id = (params["id"] || params[:id]).to_i if params["id"] || params[:id]
       @database_fields = params[:database_fields] || {}
+      @additional_fields = params[:additional_fields] || {}
     end
     
     def self.table_name
@@ -29,8 +30,17 @@ module FC
     # make instance on fields hash
     def self.create_from_fiels(data)
       # use only defined in set_table fields
-      database_fields = data.select{|key, val| self.table_fields.include?(key.to_s)}
-      self.new(database_fields.merge({:id => data["id"].to_s, :database_fields => database_fields}))
+      #database_fields = data.select{|key, val| self.table_fields.include?(key.to_s)}
+      additional_fields = {}
+      database_fields = {}
+      data.each do |key, val| 
+        if self.table_fields.include?(key.to_s)
+          database_fields[key] = val
+        elsif key != 'id'
+          additional_fields[key.to_sym] = val
+        end
+      end
+      self.new(database_fields.merge({:id => data["id"].to_s, :database_fields => database_fields, :additional_fields => additional_fields}))
     end
     
     # get element by id
@@ -60,6 +70,11 @@ module FC
         if val.to_s != db_val.to_s || val.nil? && !db_val.nil? || !val.nil? && db_val.nil?
           fields << "#{key}=#{val ? (val.class == String ? "'#{FC::DB.connect.escape(val)}'" : val.to_i) : 'NULL'}"
         end
+      end
+      @additional_fields.each do |key, val|
+        val = 1 if val == true
+        val = 0 if val == false
+        fields << "#{key}=#{val ? (val.class == String ? "'#{FC::DB.connect.escape(val)}'" : val.to_i) : 'NULL'}"
       end
       if fields.length > 0
         sql << fields.join(',')

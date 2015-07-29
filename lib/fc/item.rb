@@ -10,6 +10,7 @@ module FC
     # Additional options: 
     #   :replace=true - replace item if it exists
     #   :remove_local=true - delete local_path file/dir after add
+    #   :additional_fields - hash of additional FC:Item fields 
     # If item_name is part of local_path it processed as inplace - local_path is valid path to the item for policy
     def self.create_from_local(local_path, item_name, policy, options={})
       raise 'Path not exists' unless File.exists?(local_path)
