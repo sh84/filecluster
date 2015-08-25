@@ -15,7 +15,11 @@ module FC
     def self.connect(options = {})
       if !@options
         if defined?(ActiveRecord::Base) && ActiveRecord::Base.connection
-          connection = ActiveRecord::Base.connection.instance_variable_get(:@connection)
+          if defined?(Octopus::Proxy) && ActiveRecord::Base.connection.is_a?(Octopus::Proxy)
+            connection = ActiveRecord::Base.connection.select_connection.instance_variable_get(:@connection)
+          else
+            connection = ActiveRecord::Base.connection.instance_variable_get(:@connection)
+          end
           @options = connection.query_options.clone
           @options.merge!(options)
           @prefix = @options[:prefix].to_s if @options[:prefix]
