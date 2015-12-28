@@ -11,7 +11,7 @@ class UpdateTasksThread < BaseThread
     tasks = (type == :copy ? $tasks_copy : $tasks_delete) 
     $storages.each do |storage|
       tasks[storage.name] = [] unless tasks[storage.name]
-      ids = tasks[storage.name].map(&:id) + $curr_tasks.map(&:id)
+      ids = tasks[storage.name].map(&:id) + $curr_tasks.compact.map(&:id)
       if ids.length > limit*2
         $log.debug("Too many (#{ids.length}) #{type} tasks")
         next

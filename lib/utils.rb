@@ -74,6 +74,8 @@ def colorize_string(str, color)
     color_code = 32
   when 'yellow'
     color_code = 33
+  when 'blue'
+    color_code = 34
   when 'pink'
     color_code = 35
   else

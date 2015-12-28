@@ -7,7 +7,7 @@ def storages_list
     puts "No storages."
   else
     storages.each do |storage|
-      str = "#{colorize_string(storage.host, :yellow)} #{storage.name} #{size_to_human(storage.size)}/#{size_to_human(storage.size_limit)} "
+      str = " #{colorize_string(storage.dc, :blue)}\t#{colorize_string(storage.host, :yellow)} #{storage.name} #{size_to_human(storage.size)}/#{size_to_human(storage.size_limit)} "
       str += "#{(storage.free_rate*100).to_i}% free "
       str += "#{storage.up? ? colorize_string('UP', :green) : colorize_string('DOWN', :red)}"
       str += " #{storage.check_time_delay} seconds ago" if storage.check_time
@@ -22,6 +22,7 @@ def storages_show
     puts %Q{Storage
   Name:           #{storage.name}
   Host:           #{storage.host} 
+  DC:             #{storage.dc}
   Path:           #{storage.path} 
   Url:            #{storage.url}
   Url weight:     #{storage.url_weight}
@@ -40,6 +41,7 @@ def storages_add
   host = FC::Storage.curr_host
   puts "Add storage to host #{host}"
   name = stdin_read_val('Name')
+  dc = stdin_read_val('DC')
   path = stdin_read_val('Path')
   url = stdin_read_val('Url')
   url_weight = stdin_read_val('URL weight', true).to_i
@@ -51,7 +53,7 @@ def storages_add
   begin
     path = path +'/' unless path[-1] == '/'
     path = '/' + path unless path[0] == '/'
-    storage = FC::Storage.new(:name => name, :host => host, :path => path, :url => url, :size_limit => size_limit, :copy_storages => copy_storages, :url_weight => url_weight, :write_weight => write_weight)
+    storage = FC::Storage.new(:name => name, :dc => dc, :host => host, :path => path, :url => url, :size_limit => size_limit, :copy_storages => copy_storages, :url_weight => url_weight, :write_weight => write_weight)
     print "Calc current size.. "
     size = storage.file_size('', true)
     puts "ok"
@@ -62,6 +64,7 @@ def storages_add
   free = size_limit - size
   puts %Q{\nStorage
   Name:         #{name}
+  DC:           #{dc}
   Host:         #{host} 
   Path:         #{path} 
   Url:          #{url}
@@ -120,6 +123,7 @@ end
 def storages_change
   if storage = find_storage
     puts "Change storage #{storage.name}"
+    dc = stdin_read_val("DC (now #{storage.dc})", true)
     host = stdin_read_val("Host (now #{storage.host})", true)
     path = stdin_read_val("Path (now #{storage.path})", true)
     url = stdin_read_val("Url (now #{storage.url})", true)
@@ -128,6 +132,7 @@ def storages_change
     size_limit = stdin_read_val("Size (now #{size_to_human(storage.size_limit)})", true) {|val| "Size limit not is valid size." if !val.empty? && !human_to_size(val)}
     copy_storages = stdin_read_val("Copy storages (now #{storage.copy_storages})", true)
     
+    storage.dc = dc unless dc.empty?
     storage.host = host unless host.empty?
     if !path.empty? && path != storage.path
       path = path +'/' unless path[-1] == '/'
@@ -146,6 +151,7 @@ def storages_change
     
     puts %Q{\nStorage
     Name:          #{storage.name}
+    DC:            #{storage.dc}
     Host:          #{storage.host} 
     Path:          #{storage.path} 
     Url:           #{storage.url}
