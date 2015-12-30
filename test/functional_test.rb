@@ -81,6 +81,11 @@ class FunctionalTest < Test::Unit::TestCase
     assert_equal errors_count+1, FC::Error.where.count, "Error not saved after replace item"
     assert_nothing_raised { @item2 = FC::Item.create_from_local(@@test_file_path, 'test2', @@policies[0], {:replace => true, :tag => 'test'}) }
     assert_equal @item.id, @item2.id, "Item (id1=#{@item.id}, id2=#{@item2.id}) change id after replace"
+    item_storage = @item2.get_item_storages.first
+    item_storage.storage_name = 'host2-sda'
+    item_storage.save
+    assert_nothing_raised { @item2 = FC::Item.create_from_local(@@test_file_path, 'test2', @@policies[0], {:replace => true, :tag => 'test'}) }
+    assert_equal 'host2-sda', @item2.get_item_storages.first.storage_name
   end
   
   should "item create_from_local available storage" do

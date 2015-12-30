@@ -53,7 +53,14 @@ module FC
         item_storage = item.make_item_storage(storage, 'ready')
         item.reload
       else
-        storage = policy.get_proper_storage_for_create(item.size, local_path)
+        if item.copies.to_i > 0
+          # find storage in item.item_storages 
+          storages_names = item.get_item_storages.select{|s| s.status == 'ready'}.map(&:storage_name)
+          storage = FC::Storage.select_proper_storage_for_create(policy.get_create_storages, item.size) do |storages|
+            storages.select{|s| storages_names.detect(s.name)}
+          end
+        end
+        storage = policy.get_proper_storage_for_create(item.size, local_path) unless storage
         FC::Error.raise 'No available storage', :item_id => item.id unless storage
         
         # mark delete item_storages on replace
