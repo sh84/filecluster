@@ -64,6 +64,8 @@ def item_add_local
   policy = FC::Policy.where('id = ?', ARGV[4]).first
   policy = FC::Policy.where('name = ?', ARGV[4]).first unless policy
   puts "Policy #{ARGV[4]} not found." unless policy
+  tag = ARGV[5] || 'fc-manage-add-local'
+  outer_id = ARGV[6]
   
   if policy && storage
     if name.index(storage.path) == 0
@@ -73,7 +75,7 @@ def item_add_local
       path = (storage.path+name).gsub('//', '/')
     end
     begin
-      item = FC::Item.create_from_local(path, name, policy, :tag => 'fc-manage-add-local', :replace => true)
+      item = FC::Item.create_from_local(path, name, policy, :tag => tag, :outer_id => outer_id, :replace => true)
       item_storage = item.get_item_storages.first
       storage = FC::Storage.where('name = ?', item_storage.storage_name).first
       puts "Saved as #{storage.name+':'+storage.path+item.name}"
