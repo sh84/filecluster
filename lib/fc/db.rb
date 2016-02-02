@@ -14,7 +14,10 @@ module FC
     
     def self.connect(options = {})
       if !@options
-        if defined?(ActiveRecord::Base) && ActiveRecord::Base.connection
+        if options[:host] || options[:database] || options[:username] || options[:password] || 
+          !defined?(ActiveRecord::Base) && ActiveRecord::Base.connection
+          self.connect_by_config(options)
+        else
           if defined?(Octopus::Proxy) && ActiveRecord::Base.connection.is_a?(Octopus::Proxy)
             connection = ActiveRecord::Base.connection.select_connection.instance_variable_get(:@connection)
           else
@@ -25,8 +28,6 @@ module FC
           @prefix = @options[:prefix].to_s if @options[:prefix]
           @connects = {} unless @connects
           @connects[Thread.current.object_id] = connection
-        else
-          self.connect_by_config(options)
         end
       else
         @options.merge!(options)
