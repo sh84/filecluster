@@ -15,7 +15,7 @@ module FC
     def self.connect(options = {})
       if !@options
         if options[:host] || options[:database] || options[:username] || options[:password] || 
-          !defined?(ActiveRecord::Base) && ActiveRecord::Base.connection
+           !defined?(ActiveRecord::Base) || !ActiveRecord::Base.connection
           self.connect_by_config(options)
         else
           if defined?(Octopus::Proxy) && ActiveRecord::Base.connection.is_a?(Octopus::Proxy)
