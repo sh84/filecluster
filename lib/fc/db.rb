@@ -83,8 +83,7 @@ module FC
         self.query(sql)
       elsif e.message.match('MySQL server has gone away')
         puts e.message
-        FC::DB.close
-        FC::DB.connect!
+        self.connect_by_config(@options)
         self.query(sql)
       else
         raise e
