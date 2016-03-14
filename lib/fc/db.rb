@@ -123,12 +123,12 @@ module FC
           id int NOT NULL AUTO_INCREMENT,
           name varchar(255) NOT NULL DEFAULT '',
           host varchar(255) NOT NULL DEFAULT '',
-          path text NOT NULL DEFAULT '',
-          url text NOT NULL DEFAULT '',
+          path varchar(2048) NOT NULL DEFAULT '',
+          url varchar(2048) NOT NULL DEFAULT '',
           size bigint NOT NULL DEFAULT 0,
           size_limit bigint NOT NULL DEFAULT 0,
           check_time int DEFAULT NULL,
-          copy_storages text NOT NULL DEFAULT '',
+          copy_storages varchar(2048) NOT NULL DEFAULT '',
           PRIMARY KEY (id), UNIQUE KEY (name), KEY (host)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
       })
@@ -152,7 +152,7 @@ module FC
         CREATE TABLE #{@prefix}policies (
           id int NOT NULL AUTO_INCREMENT,
           name varchar(255) NOT NULL DEFAULT '',
-          create_storages text NOT NULL DEFAULT '',
+          create_storages varchar(2048) NOT NULL DEFAULT '',
           copies int NOT NULL DEFAULT 0,
           PRIMARY KEY (id), UNIQUE KEY (name)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
@@ -224,7 +224,7 @@ module FC
       FC::DB.query(%{
         CREATE TABLE #{@prefix}copy_rules (
           id int NOT NULL AUTO_INCREMENT,
-          copy_storages text NOT NULL DEFAULT '',
+          copy_storages varchar(2048) NOT NULL DEFAULT '',
           rule text DEFAULT NULL,
           PRIMARY KEY (id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
@@ -232,8 +232,8 @@ module FC
       
       FC::DB.query(%{
         CREATE TABLE #{@prefix}vars (
-          name varchar(255) DEFAULT NULL,
-          val varchar(255) DEFAULT NULL,
+          name varchar(255) NOT NULL DEFAULT '',
+          val varchar(255) NOT NULL DEFAULT '',
           descr text DEFAULT NULL,
           time int DEFAULT NULL,
           PRIMARY KEY (name)
