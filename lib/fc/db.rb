@@ -73,16 +73,16 @@ module FC
     rescue Mysql2::Error => e
       FC::DB.err_counter = FC::DB.err_counter.to_i + 1
       if e.message.match('Deadlock found when trying to get lock')
-        puts "Deadlock"
+        puts "#{e.message} - retry"
         sleep 0.1
         self.query(sql)
       elsif e.message.match('Lost connection to MySQL server during query')
-        puts e.message
+        puts "#{e.message} - reconnect"
         FC::DB.connect.ping
         sleep 0.1
         self.query(sql)
-      elsif e.message.match('MySQL server has gone away')
-        puts e.message
+      elsif @options[:reconnect]
+        puts "#{e.message} - reconnect"
         self.connect_by_config(@options)
         self.query(sql)
       else
