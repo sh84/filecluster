@@ -25,7 +25,7 @@ $update_tasks_thread  = nil
 $run_tasks_thread     = nil
 
 args = ARGV.clone
-default_db_config = File.expand_path(File.dirname(__FILE__))+'/db.yml'
+default_db_config = FC::DB.options_yml_path
 descriptions = {
   :config      => {:short => 'c',  :full => 'config',    :default => default_db_config, :text => "path to db.yml file, default #{default_db_config}"},
   :log_level   => {:short => 'l',  :full => 'log_level', :default => 'info', :text => 'log level (fatal, error, warn, info or debug), default info'},

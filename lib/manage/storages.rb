@@ -109,7 +109,7 @@ def storages_update_size
     print "Calc current size.. "
     size = storage.file_size('', true)
     storage.size = size
-    FC::DB.connect
+    FC::DB.reconnect
     begin
       storage.save
     rescue Exception => e
@@ -244,7 +244,7 @@ def make_storages_sync(storage, make_delete, silent = false, no_reconnect = fals
   process_storage_dir_sync.call
     
   # rm delete_files
-  FC::DB.connect unless no_reconnect
+  FC::DB.reconnect unless no_reconnect
   if make_delete
     puts "Deleting files" unless silent
     delete_files.each do |f|

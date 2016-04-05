@@ -1,8 +1,15 @@
 require 'mysql2'
+require 'psych'
 
 module FC
   module DB
-    class << self; attr_accessor :options, :prefix, :err_counter end
+    class << self
+      attr_accessor :options, :prefix, :err_counter, :no_active_record, :connect_block, :logger 
+    end
+
+    def self.options_yml_path
+      File.expand_path(File.dirname(__FILE__) + '../../../bin/db.yml')
+    end
     
     def self.connect_by_config(options)
       @options = options.clone
@@ -11,45 +18,67 @@ module FC
       @connects = {} unless @connects
       @connects[Thread.current.object_id] = Mysql2::Client.new(@options)
     end
-    
-    def self.connect(options = {})
-      if !@options
-        if options[:host] || options[:database] || options[:username] || options[:password] || 
-           !defined?(ActiveRecord::Base) || !ActiveRecord::Base.connection
-          self.connect_by_config(options)
-        else
-          if defined?(Octopus::Proxy) && ActiveRecord::Base.connection.is_a?(Octopus::Proxy)
-            connection = ActiveRecord::Base.connection.select_connection.instance_variable_get(:@connection)
-          else
-            connection = ActiveRecord::Base.connection.instance_variable_get(:@connection)
-          end
-          @options = connection.query_options.clone
-          @options.merge!(options)
-          @prefix = @options[:prefix].to_s if @options[:prefix]
-          @connects = {} unless @connects
-          @connects[Thread.current.object_id] = connection
-        end
+
+    def self.connect_by_yml(options = {})
+      db_options = Psych.load(File.read(options_yml_path))
+      connect_by_config(db_options.merge(options))
+    end
+
+    def self.connect_by_active_record(options = {})
+      if defined?(Octopus::Proxy) && ActiveRecord::Base.connection.is_a?(Octopus::Proxy)
+        connection = ActiveRecord::Base.connection.select_connection.instance_variable_get(:@connection)
       else
-        @options.merge!(options)
+        connection = ActiveRecord::Base.connection.instance_variable_get(:@connection)
       end
-      if @options[:multi_threads]
-        @connects[Thread.current.object_id] ||= Mysql2::Client.new(@options)
+      @options = connection.query_options.clone
+      @options.merge!(options)
+      @prefix = @options[:prefix].to_s if @options[:prefix]
+      @connects = {} unless @connects
+      @connects[Thread.current.object_id] = connection
+    end
+
+    def self.lazy_connect(&block)
+      @connect_block = block
+    end
+
+    def self.connect_by_block(options = {})
+      connection = @connect_block.call
+      @options = connection.query_options.clone.merge(options)
+      @prefix = @options[:prefix].to_s if @options[:prefix]
+      @connects = {} unless @connects
+      @connects[Thread.current.object_id] = connection
+      @connect_block = nil
+    end
+
+    def self.connect
+      connect_by_block if @connect_block
+      return nil unless @options
+      connect_by_config(@options) if @options[:multi_threads] && !@connects[Thread.current.object_id]
+      if @options[:multi_threads] 
+        @connects[Thread.current.object_id]
       else
-        @connects.first[1]
+        @connects.first && @connects.first[1]
       end
     end
     
     def self.connect!(options = {})
-      self.connect(options)
+      close if @connects && @connects[Thread.current.object_id]
+      if @connect_block
+        connect_by_block(options)
+      elsif options[:host] || options[:database] || options[:username] || options[:password]
+        connect_by_config(options)
+      elsif @options
+        connect_by_config(@options.merge(options))
+      elsif !@no_active_record && defined?(ActiveRecord::Base) && ActiveRecord::Base.connection
+        connect_by_active_record(options)
+      else
+        connect_by_yml(options)
+      end
     end
-    
-    # deprecated!
-    def self.connect=(connect, options = {})
-      self.connect_by_config connect.query_options.merge(options).merge(:as => :hash)
-    end
-    class << self
-      extend Gem::Deprecate
-      deprecate :connect=, :connect!, 2016, 01
+
+    def self.reconnect
+      close if connect
+      connect_by_config(@options)
     end
     
     def self.close
@@ -60,35 +89,42 @@ module FC
         end
       else
         @connects.first[1].close
+        @connects.clear
       end
     end
     
     # connect.query with deadlock solution
     def self.query(sql)
       raise 'Too many mysql errors' if FC::DB.err_counter && FC::DB.err_counter > 10
+      t1 = Time.new.to_f
       r = FC::DB.connect.query(sql)
+      t2 = Time.new.to_f
+      @logger.debug(format('FC SQL (%.1fms) %s', (t2 - t1) * 1000, sql)) if @logger
       FC::DB.err_counter = 0
-      r = r.each(:as => :hash){} if r
+      r = r.each(:as => :hash) {} if r
       r
     rescue Mysql2::Error => e
       FC::DB.err_counter = FC::DB.err_counter.to_i + 1
       if e.message.match('Deadlock found when trying to get lock')
-        puts "#{e.message} - retry"
+        msg = "#{e.message} - retry"
+        @logger ? @logger.error(msg) : puts(msg)
         sleep 0.1
-        self.query(sql)
+        query(sql)
       elsif e.message.match('Lost connection to MySQL server during query')
-        puts "#{e.message} - reconnect"
+        msg = "#{e.message} - reconnect"
+        @logger ? @logger.error(msg) : puts(msg)
         FC::DB.connect.ping
         sleep 0.1
-        self.query(sql)
+        query(sql)
       elsif @options[:reconnect]
-        puts "#{e.message} - reconnect"
-        self.connect_by_config(@options)
-        self.query(sql)
+        msg = "#{e.message} - reconnect"
+        @logger ? @logger.info(msg) : puts(msg)
+        reconnect
+        query(sql)
       else
         raise e
       end
-    end    
+    end
     
     def self.server_time
       FC::DB.query("SELECT UNIX_TIMESTAMP() as curr_time").first['curr_time'].to_i

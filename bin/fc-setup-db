@@ -27,7 +27,7 @@ options = option_parser_init(descriptions, desc)
 trap("INT", proc {exit})
 
 if !options[:__keys][:host] && !options[:__keys][:database] && !options[:__keys][:username] && !options[:__keys][:password] && !options[:__keys][:port] && !options[:__keys][:prefix]
-  default_db_config = File.expand_path(File.dirname(__FILE__))+'/db.yml'
+  default_db_config = FC::DB.options_yml_path
   if File.exists?(default_db_config)
     db_options = Psych.load(File.read(default_db_config))
     options.merge!(db_options)

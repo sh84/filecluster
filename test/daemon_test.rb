@@ -77,6 +77,7 @@ class DaemonTest < Test::Unit::TestCase
   end
 
   should "daemon_all" do
+    puts 'Start' if @debug
     @@storages.each {|storage| storage.reload}
     assert @@storages[0].up?, "Storage #{@@storages[0].name} down" 
     assert @@storages[1].up?, "Storage #{@@storages[1].name} down"
@@ -90,9 +91,10 @@ class DaemonTest < Test::Unit::TestCase
     
     @@policy.copies = 3
     @@policy.save
-    sleep 2
-    
+
     # wait for copy
+    sleep 2
+    puts 'Check copy' if @debug
     [1, 2, 3].each do |i|
       ['b', 'c'].each do |j|
         assert_equal `du -sb /tmp/host1-sda/bla/bla/test$i 2>&1`.to_i, `du -sb /tmp/host$i-sd$j/bla/bla/test$i 2>&1`.to_i
@@ -105,7 +107,9 @@ class DaemonTest < Test::Unit::TestCase
     item_storage = FC::ItemStorage.where('item_id = ? AND storage_name = ?', @item1.id, 'host1-sdc').first
     item_storage.status = 'delete'
     item_storage.save
+    
     sleep 2
+    puts 'Check delete' if @debug
     assert_equal 0, `du -sb /tmp/host1-sdc/bla/bla/test1 2>&1`.to_i
     assert_equal @@errors_count, FC::Error.where.count, "new errors in errors table"
     
@@ -118,6 +122,7 @@ class DaemonTest < Test::Unit::TestCase
     @item3.save
     
     sleep 6
+    puts 'Check mark_deleted' if @debug
     assert_raise(RuntimeError, "Item not deleted after mark_deleted") {@item1.reload}
     assert_equal 0, FC::ItemStorage.where('item_id = ?', @item2.id).count, "ItemStorages not deleted after status='error'"
     @item3.reload

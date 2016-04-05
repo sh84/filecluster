@@ -8,7 +8,7 @@ require 'filecluster'
 require 'utils'
 require 'manage'
 
-default_db_config = File.expand_path(File.dirname(__FILE__))+'/db.yml'
+default_db_config = FC::DB.options_yml_path
 descriptions = {
   :config      => {:short => 'c',  :full => 'config',     :default => default_db_config, :text => "path to db.yml file, default #{default_db_config}"},
   :curr_host   => {:short => 'h', :full => 'host',       :default => FC::Storage.curr_host, :text => "Host for storages, default #{FC::Storage.curr_host}"}

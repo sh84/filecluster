@@ -1,3 +1,3 @@
 module FC
-  VERSION = "0.4.22"
+  VERSION = '0.5.1'.freeze
 end

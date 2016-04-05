@@ -51,6 +51,61 @@ class DbTest < Test::Unit::TestCase
     @item_storage = @item_storages.first
     @item_storage2 = @item_storages[1]
   end
+
+  should 'sql logger' do
+    FC::DB.logger = mock
+    FC::DB.logger.expects(:debug).at_least_once 
+    FC::DB.query 'SELECT 1'
+    FC::DB.logger = nil
+  end
+
+  should 'close, reconnect and connect_by_yml' do
+    db_config_file = File.expand_path(File.dirname(__FILE__)) + '/db_test.yml'
+    File.open(db_config_file, 'w') do |f|
+      f.write(FC::DB.options.to_yaml)
+    end
+    
+    connect = FC::DB.connect
+    FC::DB.close
+    assert_false connect.ping, 'Mysql2 connect not closed after close call'
+    assert_nil FC::DB.connect, 'FC::DB.connect is not empty after close call'
+
+    FC::DB.stubs(:options_yml_path).returns(db_config_file)
+    FC::DB.connect_by_yml
+    assert_true FC::DB.connect.ping, 'Not connected after connect_by_yml'
+
+    FC::DB.close
+    FC::DB.reconnect
+    assert_true FC::DB.connect.ping, 'Not connected after reconnect'
+  end
+
+  should 'lazy_connect' do
+    FC::DB.close
+    FC::DB.lazy_connect do
+      Mysql2::Client.new(FC::DB.options)
+    end
+    FC::DB.connect!(:multi_threads => true)
+    assert_true FC::DB.connect.ping, 'Not connected after lazy_connect with Mysql2'
+    assert_true FC::DB.options[:multi_threads], 'Options from connect!(options) was not setted'
+    
+    FC::DB.close
+    FC::DB.lazy_connect do
+      FC::DB.connect_by_config(FC::DB.options)
+    end
+    assert_true FC::DB.connect.ping, 'Not connected after lazy_connect with FC::DB.connect_by_config'
+  end
+
+  should 'multi threads' do
+    FC::DB.connect!(:multi_threads => true)
+    threads = Array.new(5) do
+      Thread.new do
+        assert_nothing_raised { FC::DB.query('select sleep(0.05)') }
+      end
+    end
+    threads.each(&:join)
+    assert_equal FC::DB.instance_variable_get(:@connects).keys.count, 6
+    FC::DB.connect!(:multi_threads => false)
+  end
   
   should "items" do
     assert @items.count > 0, 'Items not loaded'
