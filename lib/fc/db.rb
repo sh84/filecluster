@@ -95,7 +95,6 @@ module FC
     
     # connect.query with deadlock solution
     def self.query(sql)
-      raise 'Too many mysql errors' if FC::DB.err_counter && FC::DB.err_counter > 10
       t1 = Time.new.to_f
       r = FC::DB.connect.query(sql)
       t2 = Time.new.to_f
@@ -104,13 +103,17 @@ module FC
       r = r.each(:as => :hash) {} if r
       r
     rescue Mysql2::Error => e
+      raise e if e.message =~ /You have an error in your SQL syntax/
       FC::DB.err_counter = FC::DB.err_counter.to_i + 1
-      if e.message.match('Deadlock found when trying to get lock')
+      if FC::DB.err_counter > 5
+        FC::DB.err_counter = 0
+        raise "Too many mysql errors, #{e.message}"
+      elsif e.message =~ /Deadlock found when trying to get lock/
         msg = "#{e.message} - retry"
         @logger ? @logger.error(msg) : puts(msg)
         sleep 0.1
         query(sql)
-      elsif e.message.match('Lost connection to MySQL server during query')
+      elsif e.message =~ /Lost connection to MySQL server during query/
         msg = "#{e.message} - reconnect"
         @logger ? @logger.error(msg) : puts(msg)
         FC::DB.connect.ping

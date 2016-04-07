@@ -106,6 +106,16 @@ class DbTest < Test::Unit::TestCase
     assert_equal FC::DB.instance_variable_get(:@connects).keys.count, 6
     FC::DB.connect!(:multi_threads => false)
   end
+
+  should 'mysql errors' do
+    FC::DB.connect!(:reconnect => true)
+    FC::DB.logger = mock
+    FC::DB.logger.expects(:info).at_least_once 
+    assert_raise(Mysql2::Error) { FC::DB.query('retertert') }
+    assert_raise(RuntimeError) { FC::DB.query('select ewrwerwerwer()') }
+    FC::DB.connect!(:reconnect => false)
+    FC::DB.logger = nil
+  end
   
   should "items" do
     assert @items.count > 0, 'Items not loaded'
