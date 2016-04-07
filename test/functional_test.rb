@@ -74,18 +74,21 @@ class FunctionalTest < Test::Unit::TestCase
   end
   
   should "item create_from_local replace" do
-    @item  = FC::Item.new(:name => 'test2', :policy_id => @@policies[0].id)
+    @item = FC::Item.new(:name => 'test2', :policy_id => @@policies[3].id)
     @item.save
     errors_count = FC::Error.where.count
-    assert_raise(RuntimeError, "replace item") { FC::Item.create_from_local(@@test_file_path, 'test2', @@policies[0], {:tag => 'test'}) }
+    assert_raise(RuntimeError, "replace item") { FC::Item.create_from_local(@@test_file_path, 'test2', @@policies[3], {:tag => 'test'}) }
     assert_equal errors_count+1, FC::Error.where.count, "Error not saved after replace item"
-    assert_nothing_raised { @item2 = FC::Item.create_from_local(@@test_file_path, 'test2', @@policies[0], {:replace => true, :tag => 'test'}) }
+    assert_nothing_raised { @item2 = FC::Item.create_from_local(@@test_file_path, 'test2', @@policies[3], {:replace => true, :tag => 'test'}) }
     assert_equal @item.id, @item2.id, "Item (id1=#{@item.id}, id2=#{@item2.id}) change id after replace"
     item_storage = @item2.get_item_storages.first
-    item_storage.storage_name = 'host2-sda'
+    item_storage.storage_name = 'host1-sdb'
     item_storage.save
-    assert_nothing_raised { @item2 = FC::Item.create_from_local(@@test_file_path, 'test2', @@policies[0], {:replace => true, :tag => 'test'}) }
-    assert_equal 'host2-sda', @item2.get_item_storages.first.storage_name
+    assert_nothing_raised { @item2 = FC::Item.create_from_local(@@test_file_path, 'test2', @@policies[3], {:replace => true, :tag => 'test'}) }
+    item_storages = Hash[*@item2.get_item_storages.map { |el| [el.storage_name, el] }.flatten]
+    assert_same_elements item_storages.keys, ['host1-sdb', 'host2-sda']
+    assert_equal 'delete', item_storages['host1-sdb'].status
+    assert_equal 'ready', item_storages['host2-sda'].status
   end
   
   should "item create_from_local available storage" do
@@ -109,10 +112,23 @@ class FunctionalTest < Test::Unit::TestCase
   should "item create_from_local check md5" do
     errors_count = FC::Error.where.count
     @item = FC::Item.create_from_local(@@test_file_path, 'test5', @@policies[0], {:tag => 'test'})
-    item_storage = @item.make_item_storage(@@storages[0], status = 'copy')
+    assert @item.md5
+    item_storage = @item.make_item_storage(@@storages[0], 'copy')
+    # rewrite item file
     `dd if=/dev/urandom of=#{@@storages[0].path}#{@item.name} bs=100K count=1 2>&1`
+    # md5 check must fail on copy
     assert_raise(RuntimeError) { @item.copy_item_storage(@@storages[0], @@storages[1], item_storage) }
     assert_equal errors_count+1, FC::Error.where.count, "Error not saved after check md5"
+  end
+
+  should 'item create_from_local disables md5 check' do
+    @item = FC::Item.create_from_local(@@test_file_path, 'test7', @@policies[0], {:tag => 'test', :no_md5 => true})
+    assert_nil @item.md5
+    item_storage = @item.make_item_storage(@@storages[0], 'copy')
+    # rewrite item file
+    `dd if=/dev/urandom of=#{@@storages[0].path}#{@item.name} bs=100K count=1 2>&1`
+    # no md5 check on copy - success
+    assert_nothing_raised { @item.copy_item_storage(@@storages[0], @@storages[1], item_storage) }
   end
   
   should "item create_from_local inplace" do

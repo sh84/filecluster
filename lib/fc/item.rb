@@ -11,6 +11,7 @@ module FC
     #   :replace=true - replace item if it exists
     #   :remove_local=true - delete local_path file/dir after add
     #   :additional_fields - hash of additional FC:Item fields 
+    #   :no_md5 - don't use md5
     # If item_name is part of local_path it processed as inplace - local_path is valid path to the item for policy
     def self.create_from_local(local_path, item_name, policy, options={})
       raise 'Path not exists' unless File.exists?(local_path)
@@ -20,11 +21,15 @@ module FC
         :policy_id => policy.id,
         :dir => File.directory?(local_path),
         :size => FC::Storage.new(:host => FC::Storage.curr_host).file_size(local_path),
-        :md5 => FC::Storage.new(:host => FC::Storage.curr_host).md5_sum(local_path)
+        :md5 => nil
       })
+      item_params[:md5] = FC::Storage.new(
+        :host => FC::Storage.curr_host
+      ).md5_sum(local_path) unless item_params[:no_md5]
       item_params.delete(:replace)
       item_params.delete(:remove_local)
       item_params.delete(:not_local)
+      item_params.delete(:no_md5)
       raise 'Name is empty' if item_params[:name].empty?
       raise 'Zero size path' if item_params[:size] == 0
 
@@ -94,7 +99,7 @@ module FC
         else
           storage.copy_path(src, name, remove_local, speed_limit)
         end
-        md5_on_storage = storage.md5_sum(name)
+        md5_on_storage = storage.md5_sum(name) if md5
       rescue Exception => e
         item_storage.status = 'error'
         item_storage.save
