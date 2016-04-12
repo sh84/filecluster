@@ -71,8 +71,9 @@ class DbTest < Test::Unit::TestCase
     assert_nil FC::DB.connect, 'FC::DB.connect is not empty after close call'
 
     FC::DB.stubs(:options_yml_path).returns(db_config_file)
-    FC::DB.connect_by_yml
+    FC::DB.connect_by_yml('test' => 'test')
     assert_true FC::DB.connect.ping, 'Not connected after connect_by_yml'
+    assert_equal FC::DB.options[:test], 'test', 'options keys is not symbolized'
 
     FC::DB.close
     FC::DB.reconnect

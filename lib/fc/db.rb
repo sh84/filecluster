@@ -10,18 +10,21 @@ module FC
     def self.options_yml_path
       File.expand_path(File.dirname(__FILE__) + '../../../bin/db.yml')
     end
+
+    def self.symbolize_keys(options)
+      options.each_with_object({}) { |el, memo| memo[el[0].to_sym] = el[1] }
+    end
     
     def self.connect_by_config(options)
-      @options = options.clone
-      @options[:port] = @options[:port].to_i if @options[:port]
+      @options = symbolize_keys(options)
       @prefix = @options[:prefix].to_s if @options[:prefix]
       @connects = {} unless @connects
       @connects[Thread.current.object_id] = Mysql2::Client.new(@options)
     end
 
     def self.connect_by_yml(options = {})
-      db_options = Psych.load(File.read(options_yml_path))
-      connect_by_config(db_options.merge(options))
+      db_options = symbolize_keys(Psych.load(File.read(options_yml_path)))
+      connect_by_config(db_options.merge(symbolize_keys(options)))
     end
 
     def self.connect_by_active_record(options = {})
@@ -30,8 +33,8 @@ module FC
       else
         connection = ActiveRecord::Base.connection.instance_variable_get(:@connection)
       end
-      @options = connection.query_options.clone
-      @options.merge!(options)
+      @options = symbolize_keys(connection.query_options)
+      @options.merge!(symbolize_keys(options))
       @prefix = @options[:prefix].to_s if @options[:prefix]
       @connects = {} unless @connects
       @connects[Thread.current.object_id] = connection
@@ -43,7 +46,7 @@ module FC
 
     def self.connect_by_block(options = {})
       connection = @connect_block.call
-      @options = connection.query_options.clone.merge(options)
+      @options = connection.query_options.clone.merge(symbolize_keys(options))
       @prefix = @options[:prefix].to_s if @options[:prefix]
       @connects = {} unless @connects
       @connects[Thread.current.object_id] = connection
@@ -68,7 +71,7 @@ module FC
       elsif options[:host] || options[:database] || options[:username] || options[:password]
         connect_by_config(options)
       elsif @options
-        connect_by_config(@options.merge(options))
+        connect_by_config(@options.merge(symbolize_keys(options)))
       elsif !@no_active_record && defined?(ActiveRecord::Base) && ActiveRecord::Base.connection
         connect_by_active_record(options)
       else
