@@ -237,7 +237,7 @@ def make_storages_sync(storage, make_delete, silent = false, no_reconnect = fals
         db_items[path][0] = true
         next if db_items[path][1] && db_items[path][2] != 'delete'
       end
-      delete_files << path if File.file?(f)
+      delete_files << path if File.file?(f) && path != 'healthcheck'
       process_storage_dir_sync.call(path+'/') if File.directory?(f)
     end
   end  
