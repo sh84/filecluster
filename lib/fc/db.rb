@@ -19,6 +19,7 @@ module FC
       @options = symbolize_keys(options)
       @prefix = @options[:prefix].to_s if @options[:prefix]
       @connects = {} unless @connects
+      @connect_block = nil
       @connects[Thread.current.object_id] = Mysql2::Client.new(@options)
     end
 
@@ -36,6 +37,7 @@ module FC
       @options = symbolize_keys(connection.query_options)
       @options.merge!(symbolize_keys(options))
       @prefix = @options[:prefix].to_s if @options[:prefix]
+      @connect_block = nil
       @connects = {} unless @connects
       @connects[Thread.current.object_id] = connection
     end

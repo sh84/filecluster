@@ -1,7 +1,7 @@
 require 'helper'
 
 class FunctionalTest < Test::Unit::TestCase 
-    class << self
+  class << self
     def startup
       # tmp fake storages dirs
       `rm -rf /tmp/host*-sd*`
@@ -154,5 +154,26 @@ class FunctionalTest < Test::Unit::TestCase
     assert_equal 'ready', @item.status
     assert_equal false, File.exists?(tmp_file_path)
     File.unstub(:delete)
+  end
+
+  should 'item create_from_local with block for choose storage' do
+    item = FC::Item.create_from_local(@@test_file_path, 
+                                      '/bla/bla/test7', 
+                                      @@policies[0], 
+                                      :tag => 'test') do |storages|
+      storages.select { |s| s.name == 'host2-sda' }
+    end
+    assert_kind_of FC::Item, item
+    assert_equal `du -sb /tmp/host2-sda/bla/bla/test7 2>&1`.to_i, item.size
+    assert_equal 'ready', item.status
+    item_storages = item.get_item_storages
+    assert_equal 1, item_storages.count
+    assert_equal 'ready', item_storages.first.status
+    assert_equal 'host2-sda', item_storages.first.storage_name
+    item = FC::Item.create_from_local(@@test_file_path, 
+                                      '/bla/bla/test8', 
+                                      @@policies[0], 
+                                      :tag => 'test') { [@@storages[4]] }
+    assert_equal 'host3-sda', item.get_item_storages.first.storage_name
   end
 end

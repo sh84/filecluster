@@ -13,7 +13,7 @@ module FC
     #   :additional_fields - hash of additional FC:Item fields 
     #   :no_md5 - don't use md5
     # If item_name is part of local_path it processed as inplace - local_path is valid path to the item for policy
-    def self.create_from_local(local_path, item_name, policy, options={})
+    def self.create_from_local(local_path, item_name, policy, options={}, &block)
       raise 'Path not exists' unless File.exists?(local_path)
       raise 'Policy is not FC::Policy' unless policy.instance_of?(FC::Policy)
       item_params = options.merge({
@@ -65,7 +65,12 @@ module FC
             storages.select{|s| storages_names.detect(s.name)}
           end
         end
-        storage = policy.get_proper_storage_for_create(item.size, local_path) unless storage
+        if block_given?
+          storage ||= FC::Storage.select_proper_storage_for_create(policy.get_create_storages, 
+                                                                   item.size, &block)
+        else 
+          storage ||= policy.get_proper_storage_for_create(item.size, local_path)
+        end
         FC::Error.raise 'No available storage', :item_id => item.id unless storage
         
         # mark delete item_storages on replace
