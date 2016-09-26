@@ -2,7 +2,7 @@
 
 module FC
   class Policy < DbBase
-    set_table :policies, 'name, create_storages, copies'
+    set_table :policies, 'name, create_storages, copies, delete_deferred_time'
     
     class << self
       attr_accessor :storages_cache_time, :get_create_storages_mutex

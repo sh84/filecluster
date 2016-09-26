@@ -91,13 +91,16 @@ def item_rm
   if !item
     puts "Item #{name} not found."
   else
-    s = Readline.readline("Delete? (y/n) ", false).strip.downcase
-    puts ""
-    if s == "y" || s == "yes"
-      item.mark_deleted
-      puts "ok"
+    s = Readline.readline('Immediate delete? (y/n) ', false).strip.downcase
+    puts ''
+    immediate_delete = s == 'y' || s == 'yes'
+    s = Readline.readline('Delete? (y/n) ', false).strip.downcase
+    puts ''
+    if s == 'y' || s == 'yes'
+      immediate_delete ? item.immediate_delete : item.mark_deleted
+      puts 'ok'
     else
-      puts "Canceled."
+      puts 'Canceled.'
     end
   end
 end

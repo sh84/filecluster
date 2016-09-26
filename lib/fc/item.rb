@@ -135,8 +135,15 @@ module FC
       end
     end
     
-    # mark items_storages for delete
+    # mark item and his items_storages for deferred delete
+    # real delete after policy.delete_deferred_time
     def mark_deleted
+      self.status = 'deferred_delete'
+      save
+    end
+
+    # mark item and his items_storages for immediate delete
+    def immediate_delete
       FC::DB.query("UPDATE #{FC::ItemStorage.table_name} SET status='delete' WHERE item_id = #{id}")
       self.status = 'delete'
       save

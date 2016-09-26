@@ -323,5 +323,10 @@ module FC
     def self.migrate_2
       FC::DB.query("ALTER TABLE #{@prefix}storages ADD COLUMN dc varchar(255) DEFAULT ''")
     end
+
+    def self.migrate_3
+      FC::DB.query("ALTER TABLE #{@prefix}items MODIFY COLUMN status ENUM('new', 'ready', 'error', 'delete', 'deferred_delete') NOT NULL DEFAULT 'new'")
+      FC::DB.query("ALTER TABLE #{@prefix}policies ADD COLUMN delete_deferred_time int NOT NULL DEFAULT 0")
+    end
   end
 end

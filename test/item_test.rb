@@ -16,6 +16,7 @@ class ItemTest < Test::Unit::TestCase
         item_storage
       end
       @@storages << FC::Storage.new(:name => 'rec3-sda', :host => 'rec3', :url => 'http://rec3/sda/')
+      @@storages[2].save
     end
     def shutdown
       FC::DB.query("DELETE FROM items_storages")
@@ -24,8 +25,7 @@ class ItemTest < Test::Unit::TestCase
     end
   end
   
-  should "create_from_local" do
-    policy = FC::Policy.new
+  should "create_from_local" do    policy = FC::Policy.new
     assert_raise(ArgumentError) { FC::Item.create_from_local }
     assert_raise(ArgumentError) { FC::Item.create_from_local '/bla/bla' }
     assert_raise(ArgumentError) { FC::Item.create_from_local '/bla/bla', 'test' }
@@ -33,42 +33,50 @@ class ItemTest < Test::Unit::TestCase
     assert_raise() { FC::Item.create_from_local '/bla/bla/bla', 'test', policy}
   end
   
-  should "mark_deleted" do
-    @@item.mark_deleted
+  should "immediate_delete" do
+    @@item.immediate_delete
     @@item.reload
     assert_equal 'delete', @@item.status
     @@item_storages.each do |item_storage| 
       item_storage.reload
       assert_equal 'delete', item_storage.status
+      item_storage.status = 'ready'
+      item_storage.save
+    end
+    @@item.status = 'ready'
+    @@item.save
+  end
+
+  should 'mark_deleted' do    @@item.mark_deleted
+    @@item.reload
+    assert_equal 'deferred_delete', @@item.status
+    @@item_storages.each do |item_storage| 
+      item_storage.reload
+      assert_equal 'ready', item_storage.status
     end
   end
   
-  should "make_item_storage" do
-    storage_size = @@storages[2].size.to_i
+  should "make_item_storage" do    storage_size = @@storages[2].size.to_i
     assert_kind_of FC::ItemStorage, @@item.make_item_storage(@@storages[2])
     assert_equal storage_size+@@item.size, @@storages[2].size
   end
   
-  should "get_item_storages" do
-    assert_same_elements @@item_storages.map(&:id), @@item.get_item_storages.map(&:id)
+  should "get_item_storages" do    assert_same_elements @@item_storages.map(&:id), @@item.get_item_storages.map(&:id)
   end
   
-  should "item get_available_storages" do
-    @@storages.each{|s| s.check_time = 0; s.save}
+  should "item get_available_storages" do    @@storages.each{|s| s.check_time = 0; s.save}
     @@storages[0].update_check_time
     assert_equal 1, @@item.get_available_storages.count
     assert_equal @@storages[0].name, @@item.get_available_storages.first.name
   end
   
-  should "item urls" do
-    @@storages.each{|s| s.check_time = 0; s.save}
+  should "item urls" do    @@storages.each{|s| s.check_time = 0; s.save}
     assert_equal 0, @@item.urls.count
     @@storages.each(&:update_check_time)
     assert_same_elements ["http://rec1/sda/test item", "http://rec2/sda/test item"], @@item.urls
   end
   
-  should "item url by url_weight" do
-    @@storages.each(&:update_check_time)
+  should "item url by url_weight" do    @@storages.each(&:update_check_time)
     @@storages.each{|s| s.url_weight = -1; s.save}
     assert_raise(RuntimeError) { @@item.url }
     

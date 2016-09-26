@@ -39,7 +39,9 @@ class StorageSyncTest < Test::Unit::TestCase
     assert_nothing_raised { @item3 = FC::Item.create_from_local(@@test_file_path, 'a/b/c/test3', @@policy, {:tag => 'test'}) }
     assert_nothing_raised { @item4 = FC::Item.create_from_local(@@test_file_path, 'a/b/c/d/test4', @@policy, {:tag => 'test'}) }
     assert_nothing_raised { @item5 = FC::Item.create_from_local(@@test_file_path, 'a/del_file', @@policy, {:tag => 'test'}) }
-    @item5.mark_deleted
+    assert_nothing_raised { @item6 = FC::Item.create_from_local(@@test_file_path, 'a/differed_del_file', @@policy, {:tag => 'test'}) }
+    @item5.immediate_delete
+    @item6.mark_deleted
     `mv /tmp/host1-sda/a/test1 /tmp/host1-sda/test1`
     `mv /tmp/host1-sda/a/b/c/d/test4 /tmp/host1-sda/a/b/c/d/test5`
     `mkdir /tmp/host1-sda/test_dir`
@@ -52,10 +54,12 @@ class StorageSyncTest < Test::Unit::TestCase
     @item2.reload
     @item3.reload
     @item4.reload
+    @item6.reload
     assert_equal 'error', @item1.status
     assert_equal 'ready', @item2.status
     assert_equal 'ready', @item3.status
     assert_equal 'error', @item4.status
+    assert_equal 'deferred_delete', @item6.status
     size = `du -sb #{@@test_file_path} 2>&1`.to_i
     assert_equal 0, `du -sb /tmp/host1-sda/test1 2>&1`.to_i
     assert_equal size, `du -sb /tmp/host1-sda/a/b/test2 2>&1`.to_i
@@ -63,7 +67,8 @@ class StorageSyncTest < Test::Unit::TestCase
     assert_equal 0, `du -sb /tmp/host1-sda/a/b/c/d/test5 2>&1`.to_i
     assert_equal 0, `du -sb /tmp/host1-sda/a/b/c/d 2>&1`.to_i
     assert_equal 0, `du -sb /tmp/host1-sda/test_dir 2>&1`.to_i
-    assert_equal 0, @item5.get_item_storages.size
+    assert_equal 0, @item5.get_item_storages.count
     assert_equal 0, `du -sb /tmp/host1-sda/a/del_file 2>&1`.to_i
+    assert_equal size, `du -sb /tmp/host1-sda/a/differed_del_file 2>&1`.to_i
   end
 end

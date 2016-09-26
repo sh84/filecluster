@@ -15,6 +15,7 @@ class GlobalDaemonThread < BaseThread
       end
       
       make_item_copies
+      make_item_mark_deleted
       make_deleted_error_items_storages
       make_deleted_error_items
       delete_deleted_items
@@ -66,6 +67,28 @@ class GlobalDaemonThread < BaseThread
           end
         end
       end
+    end
+  end
+
+  # mark deleted for deferred_delete items
+  def make_item_mark_deleted
+    $log.debug("GlobalDaemonThread: make_item_mark_deleted")
+    
+    limit = FC::Var.get('daemon_global_tasks_group_limit', 1000).to_i
+    loop do
+      r = FC::DB.query %(
+        SELECT i.id FROM #{FC::Item.table_name} as i, #{FC::Policy.table_name} as p 
+        WHERE 
+          i.status = 'deferred_delete' AND i.policy_id = p.id AND 
+          i.time + p.delete_deferred_time < UNIX_TIMESTAMP()
+        LIMIT #{limit}
+      )
+      break if r.count == 0
+      ids = r.map{|e| e['id']}.join(',')
+      $log.info("GlobalDaemonThread: mark delete items: #{ids}")
+      FC::DB.query("UPDATE #{FC::ItemStorage.table_name} SET status='delete' WHERE item_id in (#{ids})")
+      FC::DB.query("UPDATE #{FC::Item.table_name} SET status='delete' WHERE id in (#{ids})")
+      sleep 1
     end
   end
   
