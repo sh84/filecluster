@@ -18,9 +18,10 @@ module FC
     def self.connect_by_config(options)
       @options = symbolize_keys(options)
       @prefix = @options[:prefix].to_s if @options[:prefix]
-      @connects = {} unless @connects
+      connection = Mysql2::Client.new(@options)
       @connect_block = nil
-      @connects[Thread.current.object_id] = Mysql2::Client.new(@options)
+      @connects = {} unless @connects
+      @connects[Thread.current.object_id] = connection
     end
 
     def self.connect_by_yml(options = {})
