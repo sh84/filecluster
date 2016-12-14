@@ -90,6 +90,7 @@ def policies_change
     policy.name = name unless name.empty?
     policy.create_storages = create_storages unless create_storages.empty?
     policy.copies = copies.to_i unless copies.empty?
+    policy.delete_deferred_time = delete_deferred_time.to_i unless delete_deferred_time.empty?
     
     puts %Q{\nStorage
     Name:                 #{policy.name}
