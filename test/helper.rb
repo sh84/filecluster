@@ -4,6 +4,8 @@ $:.unshift File.expand_path('../lib', File.dirname(__FILE__))
 begin
   gem 'minitest', '~> 5'
 rescue Gem::LoadError
+  puts "Gem minitest has old version! Run bundle install."
+  exit
 end
 
 require "minitest/autorun"
@@ -31,5 +33,15 @@ class FC::TestCase < Minitest::Test
     end
     block.call
     FC::DB.define_singleton_method(:query, old_query)
+  end
+  
+  def field_time_test(el)
+    assert el.respond_to?(:time), "#{el.class}: no time field"
+    el.reload
+    assert time = el.time, "#{el.class}: no time after save"
+    sleep 1
+    el.save!
+    el.reload
+    assert el.time > time, "#{el.class}: no time after save"
   end
 end

@@ -1,12 +1,6 @@
 require 'helper'
 
 class BaseTest < FC::TestCase  
-  def setupppp
-    @@policy_id ||= 1
-    @item = FC::Item.new(:name => 'test1', :tag => 'test tag', :dir => 0, :size => 100, :blabla => 'blabla', :policy_id => @@policy_id)
-    @@policy_id += 1
-  end
-  
   def test_correct_init
     item = FC::Item.new
     assert_raises(NoMethodError, 'Set not table field') { @item.blabla }

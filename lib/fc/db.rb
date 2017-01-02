@@ -1,4 +1,5 @@
 require 'mysql2'
+require 'psych'
 
 module FC
   module DB
@@ -12,7 +13,7 @@ module FC
       @connects[Thread.current.object_id] = Mysql2::Client.new(@options)
     end
     
-    def self.connect(options = {})
+    def self.connect(options = nil)
       if !@options
         if defined?(ActiveRecord::Base) && ActiveRecord::Base.connection
           connection = ActiveRecord::Base.connection.instance_variable_get(:@connection)
@@ -21,11 +22,15 @@ module FC
           @prefix = @options[:prefix].to_s if @options[:prefix]
           @connects = {} unless @connects
           @connects[Thread.current.object_id] = connection
-        else
+        elsif options
           self.connect_by_config(options)
+        else
+          default_db_config = File.expand_path(File.dirname(__FILE__)+'/../../bin/db.yml')
+          db_options = File.readable?(default_db_config) ? Psych.load(File.read(default_db_config)) : {}
+          self.connect_by_config(db_options)
         end
       else
-        @options.merge!(options)
+        @options.merge!(options || {})
       end
       if @options[:multi_threads]
         @connects[Thread.current.object_id] ||= Mysql2::Client.new(@options)
