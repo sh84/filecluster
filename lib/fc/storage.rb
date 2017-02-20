@@ -4,7 +4,7 @@ require 'fileutils'
 
 module FC
   class Storage < DbBase
-    set_table :storages, 'name, host, dc, path, url, size, size_limit, check_time, copy_storages, url_weight, write_weight'
+    set_table :storages, 'name, host, dc, path, url, size, size_limit, check_time, copy_storages, url_weight, write_weight, auto_size'
     
     class << self
       attr_accessor :check_time_limit, :storages_cache_time, :get_copy_storages_mutex
@@ -39,7 +39,11 @@ module FC
       end
       super params
     end
-    
+
+    def auto_size?
+      (auto_size || 0) > 0
+    end
+
     def free
       size_limit - size
     end
@@ -52,7 +56,28 @@ module FC
       rate = free.to_f / size_limit
       rate < 0 ? 0.0 : rate
     end
-    
+
+    def size_in_status(status)
+      FC::DB.query(%{SELECT sum(i.size) as isize 
+        FROM #{FC::ItemStorage.table_name} its 
+        join #{FC::Item.table_name} i on i.id = its.item_id 
+        where its.storage_name = '#{self.name}' 
+        and its.status = '#{status}'}).first['isize'].to_i
+    end
+
+    def get_real_size
+      size_in_copy = size_in_status 'copy'
+      self.size_limit = get_disk_free_space - size_in_copy - auto_size + size
+    end
+
+    def get_disk_free_space
+      cmd = "df #{self.path.shellescape}"
+      cmd = "ssh -q -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"df #{self.path.shellescape}\"" unless self.class.curr_host == host 
+      r = `#{cmd} 2>&1`
+      raise r if $?.exitstatus != 0
+      r.split("\n").last.split(/\s+/)[3].to_i * 1024
+    end
+
     def get_copy_storages
       self.class.get_copy_storages_mutex.synchronize do
         unless @copy_storages_cache && Time.new.to_i - @get_copy_storages_time.to_i < self.class.storages_cache_time
