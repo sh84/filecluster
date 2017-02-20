@@ -90,11 +90,11 @@ module FC
     def self.close
       if @options[:multi_threads]
         if @connects[Thread.current.object_id]
-          @connects[Thread.current.object_id].close
+          @connects[Thread.current.object_id].close if @connects[Thread.current.object_id]
           @connects.delete(Thread.current.object_id)
         end
       else
-        @connects.first[1].close
+        @connects.first[1].close if @connects.first
         @connects.clear
       end
     end
