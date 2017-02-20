@@ -30,7 +30,7 @@ def storages_show
   Size:           #{size_to_human storage.size} (#{(storage.size_rate*100).to_i}%)
   Free:           #{size_to_human storage.free} (#{(storage.free_rate*100).to_i}%) 
   Size limit:     #{size_to_human storage.size_limit}
-  Size type:      #{storage.auto_size? ? "Auto (min #{ size_to_human storage.size_type })" : 'Static'}
+  Size type:      #{storage.auto_size? ? "Auto (min #{ size_to_human storage.auto_size })" : 'Static'}
   Copy storages:  #{storage.copy_storages}
   Check time:     #{storage.check_time ? "#{Time.at(storage.check_time)} (#{storage.check_time_delay} seconds ago)" : ''}
   Status:         #{storage.up? ? colorize_string('UP', :green) : colorize_string('DOWN', :red)}
@@ -47,12 +47,12 @@ def storages_add
   url = stdin_read_val('Url')
   url_weight = stdin_read_val('URL weight', true).to_i
   write_weight = stdin_read_val('Write weight', true).to_i
-  auto_size = %(y yes).include?(stdin_read_val('Auto size (y/n)?').downcase)
-  if auto_size
-    size_type = human_to_size stdin_read_val('Minimal free disk space') {|val| "Minimal free disk space not is valid size." unless human_to_size(val) || human_to_size(val) < 1 }
+  is_auto_size = %(y yes).include?(stdin_read_val('Auto size (y/n)?').downcase)
+  if is_auto_size
+    auto_size = human_to_size stdin_read_val('Minimal free disk space') {|val| "Minimal free disk space not is valid size." unless human_to_size(val) || human_to_size(val) < 1 }
     size_limit = 0
   else
-    size_type = 0
+    auto_size = 0
     size_limit = human_to_size stdin_read_val('Size limit') {|val| "Size limit not is valid size." unless human_to_size(val)}
   end
 
@@ -62,7 +62,7 @@ def storages_add
   begin
     path = path +'/' unless path[-1] == '/'
     path = '/' + path unless path[0] == '/'
-    storage = FC::Storage.new(:name => name, :dc => dc, :host => host, :path => path, :url => url, :size_limit => size_limit, :copy_storages => copy_storages, :url_weight => url_weight, :write_weight => write_weight, :size_type => size_type)
+    storage = FC::Storage.new(:name => name, :dc => dc, :host => host, :path => path, :url => url, :size_limit => size_limit, :copy_storages => copy_storages, :url_weight => url_weight, :write_weight => write_weight, :auto_size => auto_size)
     print 'Calc current size.. '
     size = storage.file_size('', true)
     puts "ok"
@@ -73,7 +73,7 @@ def storages_add
 
   if storage.auto_size?
     storage.size = size
-    size_limit = storage.refresh_auto_size
+    size_limit = storage.get_real_size
   end
   free = size_limit - size
   puts %Q{\nStorage
@@ -86,7 +86,7 @@ def storages_add
   Write weight: #{write_weight}
   Size:         #{size_to_human size} (#{(size.to_f*100 / size_limit).to_i}%)
   Free:         #{size_to_human free} (#{(free.to_f*100 / size_limit).to_i}%)
-  Size type:    #{storage.auto_size? ? "Auto (min #{ size_to_human(size_type) })" : 'Static' }
+  Size type:    #{storage.auto_size? ? "Auto (min #{ size_to_human(auto_size) })" : 'Static' }
   Size limit:   #{size_to_human size_limit}
   Copy storages #{copy_storages}}
   s = Readline.readline("Continue? (y/n) ", false).strip.downcase
@@ -144,12 +144,12 @@ def storages_change
     url = stdin_read_val("Url (now #{storage.url})", true)
     url_weight = stdin_read_val("URL weight (now #{storage.url_weight})", true)
     write_weight = stdin_read_val("Write weight (now #{storage.write_weight})", true)
-    auto_size = %(y yes).include?(stdin_read_val("Auto size (now #{storage.auto_size? ? 'yes' : 'no'})", true, storage.auto_size? ? 'yes' : 'no').downcase)
-    if auto_size
-      size_type = human_to_size stdin_read_val("Minimal free disk space (now #{size_to_human(storage.size_type)})", true, size_to_human(storage.size_type)) {|val| "Minimal free disk space not is valid size." if !human_to_size(val) || human_to_size(val) < 1}
+    is_auto_size = %(y yes).include?(stdin_read_val("Auto size (now #{storage.auto_size? ? 'yes' : 'no'})", true, storage.auto_size? ? 'yes' : 'no').downcase)
+    if is_auto_size
+      auto_size = human_to_size stdin_read_val("Minimal free disk space (now #{size_to_human(storage.auto_size)})", true, size_to_human(storage.auto_size)) {|val| "Minimal free disk space not is valid size." if !human_to_size(val) || human_to_size(val) < 1}
       size_limit = 0
     else
-      size_type = 0
+      auto_size = 0
       size_limit = stdin_read_val("Size (now #{size_to_human(storage.size_limit)})", true) {|val| "Size limit not is valid size." if !val.empty? && !human_to_size(val)}
     end
     copy_storages = stdin_read_val("Copy storages (now #{storage.copy_storages})", true)
@@ -164,8 +164,8 @@ def storages_change
       storage.size = storage.file_size('', true)
       puts "ok"
     end
-    storage.size_type = size_type
-    size_limit = size_to_human(storage.refresh_auto_size) if storage.auto_size?
+    storage.auto_size = auto_size
+    size_limit = size_to_human(storage.get_real_size) if storage.auto_size?
     storage.url = url unless url.empty?
     storage.url_weight = url_weight.to_i unless url_weight.empty?
     storage.write_weight = write_weight.to_i unless write_weight.empty?
@@ -183,7 +183,7 @@ def storages_change
     Write weight:  #{storage.write_weight}
     Size:          #{size_to_human storage.size} (#{(storage.size_rate*100).to_i}%)
     Free:          #{size_to_human storage.free} (#{(storage.free_rate*100).to_i}%)
-    Size type:     #{storage.auto_size? ? "Auto (Min #{size_to_human size_type})" : 'Static' }
+    Size type:     #{storage.auto_size? ? "Auto (Min #{size_to_human auto_size})" : 'Static' }
     Size limit:    #{size_to_human storage.size_limit }
     Copy storages: #{storage.copy_storages}}
     s = Readline.readline("Continue? (y/n) ", false).strip.downcase
