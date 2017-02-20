@@ -47,11 +47,12 @@ def human_to_size(size)
   result.to_i
 end
 
-def stdin_read_val(name, can_empty = false)
+def stdin_read_val(name, can_empty = false, default_value = nil)
   while val = Readline.readline("#{name}: ", false).strip.downcase
     if val.empty? && !can_empty
       puts "Input non empty #{name}."
-    else 
+    else
+      val = default_value if default_value && val.empty?
       if block_given?
         if err = yield(val) 
           puts err
