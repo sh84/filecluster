@@ -4,7 +4,7 @@ require 'psych'
 module FC
   module DB
     class << self
-      attr_accessor :options, :prefix, :err_counter, :no_active_record, :connect_block, :logger 
+      attr_accessor :options, :prefix, :err_counter, :no_active_record, :connect_block, :logger, :reconnecting
     end
 
     def self.options_yml_path
@@ -19,6 +19,7 @@ module FC
       @options = symbolize_keys(options)
       @prefix = @options[:prefix].to_s if @options[:prefix]
       connection = Mysql2::Client.new(@options)
+      @reconnecting = false
       @connect_block = nil
       @connects = {} unless @connects
       @connects[Thread.current.object_id] = connection
@@ -59,7 +60,7 @@ module FC
     def self.connect
       connect_by_block if @connect_block
       return nil unless @options
-      connect_by_config(@options) if @options[:multi_threads] && !@connects[Thread.current.object_id]
+      connect_by_config(@options) if @reconnecting || @options[:multi_threads] && !@connects[Thread.current.object_id]
       if @options[:multi_threads] 
         @connects[Thread.current.object_id]
       else
@@ -84,6 +85,7 @@ module FC
 
     def self.reconnect
       close if connect
+      @reconnecting = true
       connect_by_config(@options)
     end
     
