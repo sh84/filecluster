@@ -16,7 +16,7 @@ module FC
     def self.curr_host
       @uname || @uname = `uname -n`.chomp
     end
-    
+
     def self.select_proper_storage_for_create(storages, size, exclude = [])
       list = storages.select do |storage|
         !exclude.include?(storage.name) && storage.up? && storage.size + size < storage.size_limit && storage.write_weight.to_i >= 0
@@ -101,23 +101,33 @@ module FC
     def up?
       check_time_delay < self.class.check_time_limit
     end
-    
+
+    def self.speed_limit_to_rsync_opt(speed_limit)
+      return "--bwlimit=#{(speed_limit.to_f * 125.0).ceil} " if speed_limit.to_f > 0
+      ''
+    end
+
     # copy local_path to storage
     def copy_path(local_path, file_name, try_move = false, speed_limit = nil)
       dst_path = "#{self.path}#{file_name}"
 
-      cmd = "rm -rf #{dst_path.shellescape}; mkdir -p #{File.dirname(dst_path).shellescape}"
-      cmd = self.class.curr_host == host ? cmd : "ssh -q -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"#{cmd}\""
-      r = `#{cmd} 2>&1`
-      raise r if $?.exitstatus != 0
-      
-      op = try_move && self.class.curr_host == host && File.stat(local_path).dev == File.stat(File.dirname(dst_path)).dev ? 'mv' : 'cp -r'
-      speed_limit = (speed_limit * 1000).to_i if speed_limit.to_f > 0
-      cmd = self.class.curr_host == host ?
-        "#{op} #{local_path.shellescape} #{dst_path.shellescape}" :
-        "scp -r -q -oBatchMode=yes -oStrictHostKeyChecking=no #{speed_limit.to_i > 0 ? '-l '+speed_limit.to_s : ''} #{local_path.shellescape} #{self.host}:\"#{dst_path.shellescape}\""
-      r = `#{cmd} 2>&1`
-      raise r if $?.exitstatus != 0
+      recreate_dirs_cmd = "rm -rf #{dst_path.shellescape}; mkdir -p #{File.dirname(dst_path).shellescape}"
+
+      # recreate dirs anyway if local op
+      if try_move && self.class.curr_host == host
+        r = `#{recreate_dirs_cmd} 2>&1`
+        raise r if $?.exitstatus != 0
+      end
+      # if we can make mv command
+      if try_move && self.class.curr_host == host && File.stat(local_path).dev == File.stat(File.dirname(dst_path)).dev
+        r = `mv #{local_path.shellescape} #{dst_path.shellescape} 2>&1`
+        raise r if $?.exitstatus != 0
+      else
+        local_path += '/' if File.stat(local_path).directory?
+        cmd = "ionice -c 2 -n 7 rsync -a #{FC::Storage.speed_limit_to_rsync_opt(speed_limit)}--rsync-path=\"#{recreate_dirs_cmd} && ionice -c 2 -n 7 rsync\" #{local_path.shellescape} #{self.host}:\"#{dst_path.shellescape}\""
+        r = `#{cmd} 2>&1`
+        raise r if $?.exitstatus != 0
+      end
     end
     
     # copy object to local_path
@@ -126,11 +136,13 @@ module FC
       
       r = `rm -rf #{local_path.shellescape}; mkdir -p #{File.dirname(local_path).shellescape} 2>&1`
       raise r if $?.exitstatus != 0
-      
-      speed_limit = (speed_limit * 1000).to_i if speed_limit.to_f > 0
-      cmd = self.class.curr_host == host ? 
-        "cp -r #{src_path.shellescape} #{local_path.shellescape}" : 
-        "scp -r -q -oBatchMode=yes -oStrictHostKeyChecking=no #{speed_limit.to_i > 0 ? '-l '+speed_limit.to_s : ''} #{self.host}:\"#{src_path.shellescape}\" #{local_path.shellescape}"
+
+      # if remote file is directory?
+      cmd = "ssh -oStrictHostKeyChecking=no -q #{self.host} \"if [ -d #{src_path.shellescape} ]; then /bin/true; else /bin/false; fi\""
+      r = `#{cmd} 2>&1`
+      src_path += '/' if $?.exitstatus == 0
+
+      cmd = "ionice -c 2 -n 7 rsync -a #{FC::Storage.speed_limit_to_rsync_opt(speed_limit)}--rsync-path=\"ionice -c 2 -n 7 rsync\" #{self.host}:\"#{src_path.shellescape}\" #{local_path.shellescape}"
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
     end
