@@ -12,6 +12,7 @@ module FC
     #   :remove_local=true - delete local_path file/dir after add
     #   :additional_fields - hash of additional FC:Item fields 
     #   :no_md5 - don't use md5
+    #   :speed_limit - limit copy speed
     # If item_name is part of local_path it processed as inplace - local_path is valid path to the item for policy
     def self.create_from_local(local_path, item_name, policy, options={}, &block)
       raise 'Path not exists' unless File.exists?(local_path)
@@ -77,7 +78,8 @@ module FC
         FC::DB.query("UPDATE #{FC::ItemStorage.table_name} SET status='delete' WHERE item_id = #{item.id} AND storage_name <> '#{storage.name}'") if options[:replace]          
         
         item_storage = item.make_item_storage(storage)
-        item.copy_item_storage(local_path, storage, item_storage, options[:remove_local])
+        speed_limit = options[:speed_limit].present? ? options[:speed_limit] : nil
+        item.copy_item_storage(local_path, storage, item_storage, options[:remove_local], speed_limit)
       end
       
       return item
