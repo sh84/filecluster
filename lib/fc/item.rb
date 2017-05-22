@@ -78,8 +78,7 @@ module FC
         FC::DB.query("UPDATE #{FC::ItemStorage.table_name} SET status='delete' WHERE item_id = #{item.id} AND storage_name <> '#{storage.name}'") if options[:replace]          
         
         item_storage = item.make_item_storage(storage)
-        speed_limit = options[:speed_limit].present? ? options[:speed_limit] : nil
-        item.copy_item_storage(local_path, storage, item_storage, options[:remove_local], speed_limit)
+        item.copy_item_storage(local_path, storage, item_storage, options[:remove_local], options[:speed_limit])
       end
       
       return item

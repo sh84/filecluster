@@ -12,7 +12,7 @@ class StorageSyncTest < Test::Unit::TestCase
       @@test_file_path = '/tmp/fc_test_file'
       `dd if=/dev/urandom of=#{@@test_file_path} bs=1M count=1 2>&1`
       
-      @@storage = FC::Storage.new(:name => 'host1-sda', :host => 'host1', :path => '/tmp/host1-sda/', :size_limit => 1000000000, :check_time => Time.new.to_i)
+      @@storage = FC::Storage.new(:name => 'host1-sda', :host => 'localhost', :path => '/tmp/host1-sda/', :size_limit => 1000000000, :check_time => Time.new.to_i)
       @@storage.save
       @@policy = FC::Policy.new(:create_storages => 'host1-sda', :copies => 1, :name => 'policy 1')
       @@policy.save
@@ -26,11 +26,6 @@ class StorageSyncTest < Test::Unit::TestCase
       `rm -rf /tmp/host*-sd*`
       `rm -rf #{@@test_file_path}`
     end
-  end
-  
-  def setup
-    FC::Storage.any_instance.stubs(:host).returns('host1')
-    FC::Storage.stubs(:curr_host).returns('host1')
   end
   
   should "sync_all" do

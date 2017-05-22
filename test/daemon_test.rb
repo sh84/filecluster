@@ -23,7 +23,7 @@ class DaemonTest < Test::Unit::TestCase
       FC::Var.set('daemon_global_error_items_ttl', 2)
       @stotage_checks = 0
       Thread.new do
-        Open3.popen2e("#{daemon_bin} -c #{db_config_file} -l debug -h host1") do |stdin, stdout, t|
+        Open3.popen2e("#{daemon_bin} -c #{db_config_file} -l debug -h localhost") do |stdin, stdout, t|
           @@pid = t.pid
           while line = stdout.readline
             @stotage_checks += 1 if line =~ /Finish stotage check/i
@@ -47,21 +47,21 @@ class DaemonTest < Test::Unit::TestCase
       @@storages = []
       @@storages << FC::Storage.new(
         :name => 'host1-sda',
-        :host => 'host1',
+        :host => 'localhost',
         :path => '/tmp/host1-sda/',
         :copy_storages => 'host1-sdb,host1-sdc', 
         :size_limit => 1_000_000_000
       )
       @@storages << FC::Storage.new(
         :name => 'host1-sdb',
-        :host => 'host1',
+        :host => 'localhost',
         :path => '/tmp/host1-sdb/',
         :copy_storages => 'host1-sda,host1-sdc', 
         :size_limit => 1_000_000_000
       )
       @@storages << FC::Storage.new(
         :name => 'host1-sdc',
-        :host => 'host1',
+        :host => 'localhost',
         :path => '/tmp/host1-sdc/',
         :copy_storages => 'host1-sda,host1-sdb',
         :size_limit => 1_000_000_000
@@ -104,8 +104,6 @@ class DaemonTest < Test::Unit::TestCase
     assert @@storages[1].up?, "Storage #{@@storages[1].name} down"
     assert @@storages[2].up?, "Storage #{@@storages[2].name} down"
     
-    FC::Storage.any_instance.stubs(:host).returns('host1')
-    FC::Storage.stubs(:curr_host).returns('host1')
     assert_nothing_raised { @item1 = make_file_item('bla/bla/test1', 'test1') }
     assert_nothing_raised { @item2 = make_file_item('bla/bla/test2', 'test2') }
     assert_nothing_raised { @item3 = make_dir_item('bla/bla/test3', 'test3') }
