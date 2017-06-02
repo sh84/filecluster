@@ -8,7 +8,7 @@ class FunctionalTest < Test::Unit::TestCase
       `mkdir -p /tmp/host1-sda/ /tmp/host2-sda/`
       
       # test file to copy
-      @@test_file_path = '/tmp/fc test_file "~!@#$%^&*()_+|\';'
+      @@test_file_path = '/tmp/fc test_file \"~!@#$%^&*()_+|\';'
       `dd if=/dev/urandom of=#{@@test_file_path.shellescape} bs=100K count=1 2>&1`
       @@test_dir_path = '/tmp/fc test_dir'
       `mkdir -p #{@@test_dir_path.shellescape}/aaa #{@@test_dir_path.shellescape}/bbb`
@@ -175,5 +175,68 @@ class FunctionalTest < Test::Unit::TestCase
                                       @@policies[0], 
                                       :tag => 'test') { [@@storages[4]] }
     assert_equal 'host3-sda', item.get_item_storages.first.storage_name
+  end
+
+  should 'compute the same md5 for file without special symbols' do
+    assert_nothing_raised { @item = FC::Item.create_from_local(@@test_file_path, '/bla/bla/test10', @@policies[0], {:tag => 'test'}) }
+    item_storages = @item.get_item_storages
+    item_storage_name = item_storages.first.storage_name
+    storage = @@storages.detect { |s| s.name == item_storage_name }
+    oldfashion_md5 = old_md5_sum(storage, '/bla/bla/test10')
+    ruby_computed = storage.md5_sum('/bla/bla/test10')
+    assert_equal ruby_computed, oldfashion_md5
+  end
+
+  should 'compute the same md5 for directory' do
+    assert_nothing_raised { @item = FC::Item.create_from_local(@@test_dir_path, '/bla/bla/md5_test_dir', @@policies[3], {:tag => 'test_md5_dir'}) }
+    item_storages = @item.get_item_storages
+    item_storage_name = item_storages.first.storage_name
+    storage = @@storages.detect { |s| s.name == item_storage_name }
+    oldfashion_md5 = old_md5_sum(storage, '/bla/bla/md5_test_dir')
+    ruby_computed = storage.md5_sum('/bla/bla/md5_test_dir')
+    assert_equal ruby_computed, oldfashion_md5
+  end
+
+  should 'fail to compute the same md5 for file with special symbols' do
+    item_name = "/bla/bla/#{File.basename(@@test_file_path)}_fail"
+    assert_nothing_raised { @item = FC::Item.create_from_local(@@test_file_path, item_name, @@policies[0], {:tag => 'test'}) }
+    item_storages = @item.get_item_storages
+    item_storage_name = item_storages.first.storage_name
+    storage = @@storages.detect { |s| s.name == item_storage_name }
+    oldfashion_md5 = old_md5_sum(storage, item_name)
+    ruby_computed = storage.md5_sum(item_name)
+    assert_not_equal oldfashion_md5, ruby_computed
+  end
+
+  should 'copy_to_local successfully item with spec symbols' do
+    item_name = "/bla/bla/#{File.basename(@@test_file_path)}"
+    assert_nothing_raised { @item = FC::Item.create_from_local(@@test_file_path, item_name, @@policies[0], {:tag => 'test'}) }
+    item_storages = @item.get_item_storages
+    item_storage_name = item_storages.first.storage_name
+    storage = @@storages.detect { |s| s.name == item_storage_name }
+    target_file = @@test_file_path + '_copy'
+    storage.copy_to_local(item_name, target_file)
+    assert File.exists?(target_file)
+    `rm -f #{target_file.shellescape}`
+  end
+
+  should 'storage successfully delete file with spec symbols' do
+    item_name = "/bla/bla/#{File.basename(@@test_file_path)}_\\for_del"
+    assert_nothing_raised { @item = FC::Item.create_from_local(@@test_file_path, item_name, @@policies[3], {:tag => 'test'}) }
+    item_storages = @item.get_item_storages
+    item_storage_name = item_storages.first.storage_name
+    storage = @@storages.detect { |s| s.name == item_storage_name }
+    assert_nothing_raised { storage.delete_file(item_name) }
+    assert !File.exists?("#{storage.path}#{item_name}".shellescape)
+  end
+
+  def old_md5_sum(storage, file_name)
+    dst_path = "#{storage.path}#{file_name}"
+    cmd = `uname -n`.strip == storage.class.curr_host ?
+      "find #{dst_path.shellescape} -type f -exec md5sum {} \\; | awk '{print $1}' | sort | md5sum" :
+      "ssh -q -oBatchMode=yes -oStrictHostKeyChecking=no #{storage.host} \"find #{dst_path.shellescape} -type f -exec md5sum {} \\; | awk '{print \\$1}' | sort | md5sum\""
+    r = `#{cmd} 2>&1`
+    raise r if $?.exitstatus != 0
+    r.to_s[0..31]
   end
 end
