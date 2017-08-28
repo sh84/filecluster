@@ -31,6 +31,7 @@ module FC
       item_params.delete(:remove_local)
       item_params.delete(:not_local)
       item_params.delete(:no_md5)
+      item_params.delete(:speed_limit)
       raise 'Name is empty' if item_params[:name].empty?
       raise 'Zero size path' if item_params[:size] == 0
 
