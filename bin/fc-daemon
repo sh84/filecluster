@@ -59,6 +59,13 @@ trap("INT") {quit_on_quit}
 start_time = Time.new.to_i
 while true do
   if $exit_signal
+    # keep check storage unit up until other tasks finished
+    keep_alive_thread = Thread.new do
+      loop do
+        storages_check
+        sleep FC::Var.get('daemon_cycle_time', 30).to_i
+      end
+    end
     $log.debug('wait tasks_threads')
     $tasks_copy_threads.each do|host, tasks| 
       tasks.each{|t| t.join}
@@ -70,6 +77,7 @@ while true do
       $log.debug('wait global_daemon_thread')
       $global_daemon_thread.join
     end
+    keep_alive_thread.kill
     $log.info('Exit')
     if $exit_signal == :restart
       exec('ruby', __FILE__, *args)
