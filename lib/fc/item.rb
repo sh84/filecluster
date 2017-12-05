@@ -122,8 +122,14 @@ module FC
             item_storage.save
             FC::Error.raise "Check md5 after copy error", :item_id => id, :item_storage_id => item_storage.id
           else
+            reload
+            marked_for_delete = status == 'deferred_delete'
+
             item_storage.status = 'ready'
             item_storage.save
+
+            mark_deleted if marked_for_delete
+
             reload
             if remove_local && !src.instance_of?(FC::Storage) && File.exists?(src)
               if File.directory?(src)
