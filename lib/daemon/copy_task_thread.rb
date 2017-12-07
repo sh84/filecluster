@@ -44,12 +44,22 @@ class CopyTaskThread < BaseThread
       end
     end
     return nil unless item && item.status == 'ready'
-    src_item_storage = FC::ItemStorage.where("item_id = ? AND status = 'ready'", item.id).sample
-    unless src_item_storage
-      $log.warn("Item ##{item.id} #{item.name} has no ready item_storage")
+    available_src_storages = FC::ItemStorage.where("item_id = ? AND status = 'ready'", item.id)
+                                            .map do |item_storage|
+      $all_storages.detect { |a_storage| a_storage.name == item_storage.storage_name && a_storage.up? }
+    end.compact
+
+    # pref for current host
+    src_storage = available_src_storages.detect { |src| src.host == storage.host }
+    # pref for same dc
+    src_storage = available_src_storages.detect { |src| src.dc == storage.dc } unless src_storage
+    # random from available storages
+    src_storage = available_src_storages.sample unless src_storage
+
+    unless src_storage
+      $log.warn("Item ##{item.id} #{item.name} has no ready item_storage or storage")
       return nil 
     end
-    src_storage = $all_storages.detect{|s| s.name == src_item_storage.storage_name}
     $log.debug("Copy from #{src_storage.name} to #{storage.name} #{storage.path}#{item.name}")
     item.copy_item_storage(src_storage, storage, task, false, speed_limit)
   rescue Exception => e
