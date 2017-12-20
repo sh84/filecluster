@@ -45,7 +45,14 @@ class FunctionalTest < Test::Unit::TestCase
     FC::Storage.any_instance.stubs(:host).returns('localhost')
     FC::Storage.stubs(:curr_host).returns('localhost')
   end
-  
+
+  def stub_method(obj, method, method_impl)
+    obj.singleton_class.send(:alias_method, "#{method}_mock_backup", method)
+    obj.define_singleton_method(method, method_impl)
+    yield if block_given?
+    obj.singleton_class.send(:alias_method, method, "#{method}_mock_backup")
+  end
+
   should "item create_from_local successful" do
     assert_nothing_raised { @item = FC::Item.create_from_local(@@test_file_path, '/bla/bla/test1', @@policies[0], {:tag => 'test'}) }
     assert_kind_of FC::Item, @item
@@ -130,7 +137,61 @@ class FunctionalTest < Test::Unit::TestCase
     # no md5 check on copy - success
     assert_nothing_raised { @item.copy_item_storage(@@storages[0], @@storages[1], item_storage) }
   end
-  
+
+  should 'item keep deferred_delete after copy' do
+    @item = FC::Item.create_from_local(@@test_file_path, 'test9', @@policies[0], {:tag => 'test', :no_md5 => true})
+    item_storage = @item.make_item_storage(@@storages[1], 'copy')
+    @item.mark_deleted
+    # rewrite item file
+    `dd if=/dev/urandom of=#{@@storages[0].path}#{@item.name} bs=100K count=1 2>&1`
+    @item.copy_item_storage(@@storages[0], @@storages[1], item_storage)
+    @item.reload
+    assert_equal 2, @item.get_item_storages.size
+    @item.get_item_storages.each do |is|
+      assert_equal 'ready', is.status
+    end
+    assert_equal 'deferred_delete', @item.status
+  end
+
+  should 'item keep deferred_delete status if changed during copy' do
+    @item = FC::Item.create_from_local(@@test_file_path, 'test10', @@policies[0], {:tag => 'test', :no_md5 => true})
+    item_storage = @item.make_item_storage(@@storages[1], 'copy')
+    # rewrite item file
+    `dd if=/dev/urandom of=#{@@storages[0].path}#{@item.name} bs=100K count=1 2>&1`
+    # no md5 check on copy - success
+    item = @item
+    stubbed_method_impl = proc { |*args|
+      copy_to_local_mock_backup(*args)
+      item.mark_deleted
+    }
+    stub_method(@@storages[0], :copy_to_local, stubbed_method_impl) do
+      @item.copy_item_storage(@@storages[0], @@storages[1], item_storage)
+    end
+    @item.reload
+    assert_equal 'ready', item_storage.status
+    assert_equal 'deferred_delete', @item.status
+  end
+
+  should 'item keep deferred_delete status if changed during copy and error was raised' do
+    @item = FC::Item.create_from_local(@@test_file_path, 'test11', @@policies[0], {:tag => 'test'})
+    item_storage = @item.make_item_storage(@@storages[1], 'copy')
+    # rewrite item file
+    `dd if=/dev/urandom of=#{@@storages[0].path}#{@item.name} bs=100K count=1 2>&1`
+
+    # simulate mark_delete during copy process and raise exception
+    item = @item
+    stubbed_method_impl = proc { |*_|
+      item.mark_deleted
+      raise 'oops'
+    }
+    stub_method(@@storages[0], :copy_to_local, stubbed_method_impl) do
+      assert_raise(RuntimeError) { @item.copy_item_storage(@@storages[0], @@storages[1], item_storage) }
+    end
+    @item.reload
+    assert_equal 'error', item_storage.status
+    assert_equal 'deferred_delete', @item.status
+  end
+
   should "item create_from_local inplace" do
     tmp_file_path = "/tmp/host2-sda/inplace test"
     `cp #{@@test_file_path.shellescape} #{tmp_file_path.shellescape}`
