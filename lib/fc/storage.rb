@@ -1,6 +1,7 @@
 # encoding: utf-8
 require 'shellwords'
 require 'fileutils'
+require 'digest'
 
 module FC
   class Storage < DbBase
@@ -111,7 +112,7 @@ module FC
     def copy_path(local_path, file_name, try_move = false, speed_limit = nil)
       dst_path = "#{self.path}#{file_name}"
 
-      recreate_dirs_cmd = "rm -rf #{dst_path.shellescape}; mkdir -p #{File.dirname(dst_path).shellescape}"
+      recreate_dirs_cmd = "rm -rf #{dst_path.shellescape} ; mkdir -p #{File.dirname(dst_path).shellescape}"
 
       # recreate dirs anyway if local op
       if try_move && self.class.curr_host == host
@@ -124,7 +125,7 @@ module FC
         raise r if $?.exitstatus != 0
       else
         local_path += '/' if File.stat(local_path).directory?
-        cmd = "ionice -c 2 -n 7 rsync -e \"ssh -o StrictHostKeyChecking=no\" -a #{FC::Storage.speed_limit_to_rsync_opt(speed_limit)}--rsync-path=\"#{recreate_dirs_cmd} && ionice -c 2 -n 7 rsync\" #{local_path.shellescape} #{self.host}:\"#{dst_path.shellescape}\""
+        cmd = "ionice -c 2 -n 7 rsync -e \"ssh -o StrictHostKeyChecking=no\" -a #{FC::Storage.speed_limit_to_rsync_opt(speed_limit)}--rsync-path=\"#{recreate_dirs_cmd} && ionice -c 2 -n 7 rsync\" #{local_path.shellescape} #{self.host}:#{dst_path.shellescape.shellescape}"
         r = `#{cmd} 2>&1`
         raise r if $?.exitstatus != 0
       end
@@ -134,15 +135,15 @@ module FC
     def copy_to_local(file_name, local_path, speed_limit = nil)
       src_path = "#{self.path}#{file_name}"
       
-      r = `rm -rf #{local_path.shellescape}; mkdir -p #{File.dirname(local_path).shellescape} 2>&1`
+      r = `rm -rf #{local_path.shellescape} ; mkdir -p #{File.dirname(local_path).shellescape} 2>&1`
       raise r if $?.exitstatus != 0
 
       # if remote file is directory?
-      cmd = "ssh -oStrictHostKeyChecking=no -q #{self.host} \"if [ -d #{src_path.shellescape} ]; then /bin/true; else /bin/false; fi\""
+      cmd = "ssh -oStrictHostKeyChecking=no -q #{self.host} \"if [ -d #{src_path.shellescape.shellescape} ]; then /bin/true; else /bin/false; fi\""
       r = `#{cmd} 2>&1`
       src_path += '/' if $?.exitstatus == 0
 
-      cmd = "ionice -c 2 -n 7 rsync -e \"ssh -o StrictHostKeyChecking=no\" -a #{FC::Storage.speed_limit_to_rsync_opt(speed_limit)}--rsync-path=\"ionice -c 2 -n 7 rsync\" #{self.host}:\"#{src_path.shellescape}\" #{local_path.shellescape}"
+      cmd = "ionice -c 2 -n 7 rsync -e \"ssh -o StrictHostKeyChecking=no\" -a #{FC::Storage.speed_limit_to_rsync_opt(speed_limit)}--rsync-path=\"ionice -c 2 -n 7 rsync\" #{self.host}:#{src_path.shellescape.shellescape} #{local_path.shellescape}"
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
     end
@@ -158,11 +159,11 @@ module FC
         rescue Errno::ENOENT
         end
       else
-        cmd = "ssh -q -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"rm -rf #{dst_path.shellescape}\""
+        cmd = "ssh -q -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"rm -rf #{dst_path.shellescape.shellescape}\""
         r = `#{cmd} 2>&1`
         raise r if $?.exitstatus != 0
         
-        cmd = "ssh -q -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"ls -la #{dst_path.shellescape}\""
+        cmd = "ssh -q -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"ls -la #{dst_path.shellescape.shellescape}\""
         r = `#{cmd} 2>/dev/null`
         raise "Path #{dst_path} not deleted" unless r.empty?
       end
@@ -174,7 +175,7 @@ module FC
       
       cmd = self.class.curr_host == host ? 
         "du -sb #{dst_path.shellescape}" : 
-        "ssh -q -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"du -sb #{dst_path.shellescape}\""
+        "ssh -q -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"du -sb #{dst_path.shellescape.shellescape}\""
       r = ignore_errors ? `#{cmd} 2>/dev/null` : `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
       r.to_i
@@ -184,13 +185,17 @@ module FC
     def md5_sum(file_name)
       dst_path = "#{self.path}#{file_name}"
       cmd = self.class.curr_host == host ?
-          "find #{dst_path.shellescape} -type f -exec md5sum {} \\; | awk '{print $1}' | sort | md5sum" :
-          "ssh -q -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"find #{dst_path.shellescape} -type f -exec md5sum {} \\; | awk '{print \\$1}' | sort | md5sum\""
-      r = `#{cmd} 2>&1`
+          "find #{dst_path.shellescape} -type f -exec md5sum {} \\;" :
+          "ssh -q -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"find #{dst_path.shellescape.shellescape} -type f -exec md5sum {} \\;\""
+      r = `#{cmd} 2>&1`.strip
       raise r if $?.exitstatus != 0
-      r.to_s[0..31]
+      r = r.split("\n").map { |i|
+        i[0] = '' if i[0] == '\\'
+        i[0..31]
+      }.sort.join("\n") + "\n"
+      Digest::MD5.hexdigest(r)
     end
-    
+
     # get available storage for copy by size
     def get_proper_storage_for_copy(size, exclude = [])
       FC::Storage.select_proper_storage_for_create(get_copy_storages, size, exclude)
