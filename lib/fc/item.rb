@@ -108,8 +108,7 @@ module FC
         end
         md5_on_storage = storage.md5_sum(name) if md5
       rescue Exception => e
-        item_storage.status = 'error'
-        item_storage.save
+        item_storage_status_set(item_storage, 'error')
         FC::Error.raise "Copy error: #{e.message}", :item_id => id, :item_storage_id => item_storage.id
       else
         begin
@@ -118,19 +117,10 @@ module FC
           FC::Error.raise "After copy error: #{e.message}", :item_id => id, :item_storage_id => item_storage.id
         else
           if md5 && md5_on_storage != md5
-            item_storage.status = 'error'
-            item_storage.save
+            item_storage_status_set(item_storage, 'error')
             FC::Error.raise "Check md5 after copy error", :item_id => id, :item_storage_id => item_storage.id
           else
-            reload
-            marked_for_delete = status == 'deferred_delete'
-
-            item_storage.status = 'ready'
-            item_storage.save
-
-            mark_deleted if marked_for_delete
-
-            reload
+            item_storage_status_set(item_storage, 'ready')
             if remove_local && !src.instance_of?(FC::Storage) && File.exists?(src)
               if File.directory?(src)
                 FileUtils.rm_r(src)
@@ -142,7 +132,16 @@ module FC
         end
       end
     end
-    
+
+    def item_storage_status_set(item_storage, status)
+      reload
+      marked_for_delete = self.status == 'deferred_delete'
+      item_storage.status = status
+      item_storage.save
+      reload
+      mark_deleted if marked_for_delete
+    end
+
     # mark item and his items_storages for deferred delete
     # real delete after policy.delete_deferred_time
     def mark_deleted
