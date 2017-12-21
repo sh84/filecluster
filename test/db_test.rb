@@ -145,8 +145,10 @@ class DbTest < Test::Unit::TestCase
     assert_equal 'rec1-sda,rec2-sdd', @policies[1].create_storages, "Policy (id=#{@policies[0].id}) incorrect create_storages"
     assert_equal 'rec1-sda', @policies[2].create_storages, "Policy (id=#{@policies[0].id}) incorrect create_storages"
     
-    assert_raise(Mysql2::Error, 'Create policy with uniq name') { FC::Policy.new(:create_storages => 'bla,test', :name => 'policy 1').save }
-    assert_raise(Mysql2::Error, 'Create policy with incorrect create_storages') { FC::Policy.new(:create_storages => 'bla,test', :name => 'new policy').save }
+    FC::Policy.new(:create_storages => 'rec2-sda,rec2-sdd', :name => 'policy 1').save
+    assert_equal 'rec1-sda,rec1-sdd', FC::Policy.where('name = ?', 'policy 1').first.create_storages, "Create policy with uniq name"
+    FC::Policy.new(:create_storages => 'bla,test', :name => 'new policy').save
+    assert_nil FC::Policy.where('name = ?', 'new policy').first, "Create policy with incorrect create_storages"
     
     assert_raise(Mysql2::Error, 'Change storage name with linked polices') { @storages[0].name = 'blabla'; @storages[0].save }
     assert_raise(Mysql2::Error, 'Delete storage name with linked polices') { @storages[0].delete }
