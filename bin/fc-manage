@@ -73,6 +73,14 @@ Command:
    change <host>       change current copy speed limit for host   
    add                 add copy speed limit for host
 }],
+  'autosync' => [
+    'show and change autosync intervals for FC hosts',
+    %q{Usage: fc-manage autosync <command>
+Command:
+  list                show all intervals
+  change <host>       change sync interval for host
+  add                 add non default sync interval for host
+}],
   'item' => [
     'show and manage items', 
     %q{Usage: fc-manage [options] item <command>

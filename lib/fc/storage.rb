@@ -4,7 +4,7 @@ require 'fileutils'
 
 module FC
   class Storage < DbBase
-    set_table :storages, 'name, host, dc, path, url, size, size_limit, check_time, copy_storages, url_weight, write_weight, auto_size'
+    set_table :storages, 'name, host, dc, path, url, size, size_limit, check_time, copy_storages, url_weight, write_weight, auto_size, autosync_at'
     
     class << self
       attr_accessor :check_time_limit, :storages_cache_time, :get_copy_storages_mutex

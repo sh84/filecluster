@@ -6,6 +6,7 @@ require "daemon/run_tasks_thread"
 require "daemon/update_tasks_thread"
 require "daemon/copy_task_thread"
 require "daemon/delete_task_thread"
+require "daemon/autosync_thread"
 
 def error(msg, options = {})
   $log.error(msg)
@@ -70,5 +71,19 @@ def run_tasks
   if !$run_tasks_thread || !$run_tasks_thread.alive?
     $log.debug("spawn RunTasksThread")
     $run_tasks_thread = RunTasksThread.new
+  end
+end
+
+def autosync
+  if !$autosync_thread || !$autosync_thread.alive?
+    intervals = FC::Var.get_autosync
+    storage_interval = intervals[FC::Storage.curr_host] || intervals['all']
+    return if storage_interval.zero? # do not run aytosync
+    storages = $storages.select do |s|
+      s.autosync_at.to_i + storage_interval < Time.now.to_i
+    end
+    return unless storages.any?
+    $log.debug("spawn AutosyncThread for storages #{storages.map(&:name).join(', ')}")
+    $autosync_thread = AutosyncThread.new(storages)
   end
 end
