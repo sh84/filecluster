@@ -1,12 +1,12 @@
 require 'helper'
 
-class FunctionalTest < Test::Unit::TestCase 
+class FunctionalTest < Test::Unit::TestCase
   class << self
     def startup
       # tmp fake storages dirs
       `rm -rf /tmp/host*-sd*`
       `mkdir -p /tmp/host1-sda/ /tmp/host2-sda/`
-      
+
       # test file to copy
       @@test_file_path = '/tmp/fc test_file "~!@#$%^&*()_+|\';'
       `dd if=/dev/urandom of=#{@@test_file_path.shellescape} bs=100K count=1 2>&1`
@@ -14,7 +14,7 @@ class FunctionalTest < Test::Unit::TestCase
       `mkdir -p #{@@test_dir_path.shellescape}/aaa #{@@test_dir_path.shellescape}/bbb`
       `cp #{@@test_file_path.shellescape} #{@@test_dir_path.shellescape}/aaa/test1`
       `cp #{@@test_file_path.shellescape} #{@@test_dir_path.shellescape}/bbb/test2`
-      
+
       @@storages = []
       @@storages << FC::Storage.new(:name => 'host1-sda', :host => 'host1', :path => '/tmp/host1-sda/', :size => 0, :size_limit => 1000000, :check_time => Time.new.to_i)
       @@storages << FC::Storage.new(:name => 'host1-sdb', :host => 'host1', :path => '/tmp/host1-sdb/', :size => 0, :size_limit => 1000000, :check_time => Time.new.to_i)
@@ -22,7 +22,7 @@ class FunctionalTest < Test::Unit::TestCase
       @@storages << FC::Storage.new(:name => 'host2-sdb', :host => 'host2', :path => '/tmp/host2-sdb/', :size => 10, :size_limit => 1000000, :check_time => Time.new.to_i)
       @@storages << FC::Storage.new(:name => 'host3-sda', :host => 'host3', :path => '/tmp/host3-sda/', :size => 100, :size_limit => 1000000)
       @@storages.each { |storage| storage.save}
-      
+
       @@policies = []
       @@policies << FC::Policy.new(:create_storages => 'host1-sda,host2-sda', :copy_storages => 'host1-sdb', :copies => 2, :name => 'policy 1')
       @@policies << FC::Policy.new(:create_storages => 'host1-sdb,host2-sdb', :copy_storages => 'host1-sdb', :copies => 2, :name => 'policy 2')
@@ -40,10 +40,10 @@ class FunctionalTest < Test::Unit::TestCase
       #`rm -rf #{@@test_dir_path.shellescape}`
     end
   end
-  
+
   def setup
-    FC::Storage.any_instance.stubs(:host).returns('localhost')
-    FC::Storage.stubs(:curr_host).returns('localhost')
+    FC::Storage.any_instance.stubs(:host).returns(ENV['SSH_HOST'] || 'localhost')
+    FC::Storage.stubs(:curr_host).returns(ENV['SSH_HOST'] || 'localhost')
   end
 
   def stub_method(obj, method, method_impl)
@@ -65,7 +65,7 @@ class FunctionalTest < Test::Unit::TestCase
     assert_equal 'ready', item_storage.status
     assert_equal 'host1-sda', item_storage.storage_name
   end
-  
+
   should "item create_from_local dir successful" do
     assert_nothing_raised { @item = FC::Item.create_from_local(@@test_dir_path, '/bla/bla/test_dir', @@policies[0], {:tag => 'test_dir'}) }
     assert_kind_of FC::Item, @item
@@ -79,7 +79,7 @@ class FunctionalTest < Test::Unit::TestCase
     assert_equal 'ready', item_storage.status
     assert_equal 'host1-sda', item_storage.storage_name
   end
-  
+
   should "item create_from_local replace" do
     @item = FC::Item.new(:name => 'test2', :policy_id => @@policies[3].id)
     @item.save
@@ -97,13 +97,13 @@ class FunctionalTest < Test::Unit::TestCase
     assert_equal 'delete', item_storages['host1-sdb'].status
     assert_equal 'ready', item_storages['host2-sda'].status
   end
-  
+
   should "item create_from_local available storage" do
     errors_count = FC::Error.where.count
     assert_raise(RuntimeError, "available storage") { FC::Item.create_from_local(@@test_file_path, 'test3', @@policies[2], {:tag => 'test'}) }
     assert_equal errors_count+1, FC::Error.where.count, "Error not saved on available storage"
   end
-  
+
   should "item create_from_local delete item_storage" do
     @item  = FC::Item.new(:name => 'test4', :policy_id => @@policies[3].id)
     @item.save
@@ -115,7 +115,7 @@ class FunctionalTest < Test::Unit::TestCase
     assert_not_equal item_storage.id, item_storages.first.id
     assert_raise(RuntimeError) { item_storage.reload }
   end
-  
+
   should "item create_from_local check md5" do
     errors_count = FC::Error.where.count
     @item = FC::Item.create_from_local(@@test_file_path, 'test5', @@policies[0], {:tag => 'test'})
@@ -197,14 +197,14 @@ class FunctionalTest < Test::Unit::TestCase
     `cp #{@@test_file_path.shellescape} #{tmp_file_path.shellescape}`
     assert_nothing_raised { FC::Item.create_from_local(tmp_file_path, 'inplace test', @@policies[0]) }
   end
-  
+
   should "item create_from_local inplace for dir" do
     tmp_dir_path = "/tmp/host2-sda/inplace test dir/"
     `mkdir #{tmp_dir_path.shellescape}`
     `cp #{@@test_file_path.shellescape} #{tmp_dir_path.shellescape}`
     assert_nothing_raised { FC::Item.create_from_local(tmp_dir_path, '/inplace test dir/', @@policies[0]) }
   end
-  
+
   should "item create_from_local with move and delete" do
     tmp_file_path = "/tmp/fc test file for delete"
     `cp #{@@test_file_path.shellescape} #{tmp_file_path.shellescape}`
@@ -218,22 +218,23 @@ class FunctionalTest < Test::Unit::TestCase
   end
 
   should 'item create_from_local with block for choose storage' do
-    item = FC::Item.create_from_local(@@test_file_path, 
-                                      '/bla/bla/test7', 
-                                      @@policies[0], 
+    item = FC::Item.create_from_local(@@test_file_path,
+                                      '/bla/bla/test7',
+                                      @@policies[0],
                                       :tag => 'test') do |storages|
       storages.select { |s| s.name == 'host2-sda' }
     end
     assert_kind_of FC::Item, item
+
     assert_equal `du -sb /tmp/host2-sda/bla/bla/test7 2>&1`.to_i, item.size
     assert_equal 'ready', item.status
     item_storages = item.get_item_storages
     assert_equal 1, item_storages.count
     assert_equal 'ready', item_storages.first.status
     assert_equal 'host2-sda', item_storages.first.storage_name
-    item = FC::Item.create_from_local(@@test_file_path, 
-                                      '/bla/bla/test8', 
-                                      @@policies[0], 
+    item = FC::Item.create_from_local(@@test_file_path,
+                                      '/bla/bla/test8',
+                                      @@policies[0],
                                       :tag => 'test') { [@@storages[4]] }
     assert_equal 'host3-sda', item.get_item_storages.first.storage_name
   end

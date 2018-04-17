@@ -1,0 +1,40 @@
+version: '3.5'
+
+services:
+  filecluster-db:
+    image: mysql:5.6
+    volumes:
+      - filecluster_db56:/var/lib/mysql
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+      MYSQL_USER: filecluster
+      MYSQL_DATABASE : filecluser
+      MYSQL_PASSWORD: clusterfile
+      MYSQL_HOST: filecluster-db
+
+  filecluster1:
+    build: ./
+    depends_on:
+      - filecluster-db
+      - filecluster1-ssh
+    environment:
+      MYSQL_USER: filecluster
+      MYSQL_DATABASE : filecluser
+      MYSQL_PASSWORD: clusterfile
+      MYSQL_HOST: filecluster-db
+      SSH_HOST: filecluster1-ssh
+    volumes:
+      - filetest_1:/tmp/
+      - ./:/app/
+    hostname: filecluster1
+
+  filecluster1-ssh:
+    image: registry.inventos.ru:5000/base/sshd:latest
+    volumes:
+      - filetest_1:/tmp/
+
+volumes:
+  filecluster_db56:
+    driver: local
+  filetest_1:
+    driver: local
