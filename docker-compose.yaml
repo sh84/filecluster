@@ -1,0 +1,35 @@
+version: '3.5'
+
+services:
+  filecluster-db:
+    image: mysql:5.7.21
+    volumes:
+      - filecluster_db:/var/lib/mysql
+    env_file:
+      - ./docker/development.env
+
+  filecluster1:
+    build: ./
+    depends_on:
+      - filecluster-db
+      - filecluster1-ssh
+    volumes:
+      - filetest_1:/tmp/
+      - ./:/app/
+      - ./.ssh:/home/filecluster/.ssh
+    hostname: filecluster1
+    env_file:
+      - ./docker/development.env
+
+
+  filecluster1-ssh:
+    image: asigatchov/ubuntu16-sshd
+    volumes:
+      - filetest_1:/tmp/
+      - ./.ssh:/home/filecluster/.ssh
+
+volumes:
+  filecluster_db:
+    driver: local
+  filetest_1:
+    driver: local
