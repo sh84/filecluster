@@ -17,3 +17,8 @@ FC::DB.query("CREATE DATABASE #{TEST_DATABASE}")
 FC::DB.query("USE #{TEST_DATABASE}")
 FC::DB.init_db(true)
 FC::DB.options[:database] = TEST_DATABASE
+
+
+def ssh_hostname
+  ENV['SSH_HOST'] || 'localhost'
+end

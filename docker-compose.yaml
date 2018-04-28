@@ -5,38 +5,29 @@ services:
     image: mysql:5.7.21
     volumes:
       - filecluster_db:/var/lib/mysql
-    environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: 1
-      MYSQL_USER: filecluster
-      MYSQL_DATABASE : filecluser
-      MYSQL_PASSWORD: clusterfile
-      MYSQL_HOST: filecluster-db
+    env_file:
+      - ./docker/development.env
 
   filecluster1:
     build: ./
     depends_on:
       - filecluster-db
       - filecluster1-ssh
-    environment:
-      MYSQL_USER: filecluster
-      MYSQL_DATABASE : filecluser
-      MYSQL_PASSWORD: clusterfile
-      MYSQL_HOST: filecluster-db
-      SSH_HOST: filecluster1-ssh
     volumes:
       - filetest_1:/tmp/
       - ./:/app/
+      - ./.ssh:/home/filecluster/.ssh
     hostname: filecluster1
+    env_file:
+      - ./docker/development.env
 
 
   filecluster1-ssh:
-    image: registry.inventos.ru:5000/base/sshd:latest
+    #image: registry.inventos.ru:5000/base/sshd:latest
+    image: sshd
     volumes:
       - filetest_1:/tmp/
-
-
-
-
+      - ./.ssh:/home/filecluster/.ssh
 
 volumes:
   filecluster_db:

@@ -22,4 +22,5 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency "rake"
   gem.add_development_dependency "shoulda-context"
   gem.add_development_dependency "mocha", ">= 0.13.3"
+  gem.add_development_dependency "byebug"
 end

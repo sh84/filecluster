@@ -12,7 +12,7 @@ class StorageSyncTest < Test::Unit::TestCase
       @@test_file_path = '/tmp/fc_test_file'
       `dd if=/dev/urandom of=#{@@test_file_path} bs=1M count=1 2>&1`
 
-      @@storage = FC::Storage.new(:name => 'host1-sda', :host => ENV['SSH_HOST'] || 'localhost', :path => '/tmp/host1-sda/', :size_limit => 1000000000, :check_time => Time.new.to_i)
+      @@storage = FC::Storage.new(:name => 'host1-sda', :host => ssh_hostname, :path => '/tmp/host1-sda/', :size_limit => 1000000000, :check_time => Time.new.to_i)
       @@storage.save
       @@policy = FC::Policy.new(:create_storages => 'host1-sda', :copies => 1, :name => 'policy 1')
       @@policy.save

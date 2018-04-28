@@ -23,7 +23,7 @@ class DaemonTest < Test::Unit::TestCase
       FC::Var.set('daemon_global_error_items_ttl', 2)
       @stotage_checks = 0
       Thread.new do
-        Open3.popen2e("#{daemon_bin} -c #{db_config_file} -l debug -h #{ ENV['SSH_HOST'] || 'localhost'} ") do |stdin, stdout, t|
+        Open3.popen2e("#{daemon_bin} -c #{db_config_file} -l debug -h #{ ssh_hostname} ") do |stdin, stdout, t|
           @@pid = t.pid
           while line = stdout.readline
             @stotage_checks += 1 if line =~ /Finish stotage check/i
@@ -47,21 +47,21 @@ class DaemonTest < Test::Unit::TestCase
       @@storages = []
       @@storages << FC::Storage.new(
         :name => 'host1-sda',
-        :host =>  ENV['SSH_HOST'] || 'localhost',
+        :host =>  ssh_hostname,
         :path => '/tmp/host1-sda/',
         :copy_storages => 'host1-sdb,host1-sdc',
         :size_limit => 1_000_000_000
       )
       @@storages << FC::Storage.new(
         :name => 'host1-sdb',
-        :host => ENV['SSH_HOST'] || 'localhost',
+        :host =>  ssh_hostname,
         :path => '/tmp/host1-sdb/',
         :copy_storages => 'host1-sda,host1-sdc',
         :size_limit => 1_000_000_000
       )
       @@storages << FC::Storage.new(
         :name => 'host1-sdc',
-        :host => ENV['SSH_HOST'] || 'localhost',
+        :host =>  ssh_hostname,
         :path => '/tmp/host1-sdc/',
         :copy_storages => 'host1-sda,host1-sdb',
         :size_limit => 1_000_000_000

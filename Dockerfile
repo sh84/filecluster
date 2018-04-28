@@ -10,6 +10,7 @@ RUN  apt-get update \
   libreadline-dev \
   libmysqlclient-dev \
   tzdata \
+  super \
   && rm -rf /var/lib/apt/lists/*
 
 RUN wget http://ftp.ruby-lang.org/pub/ruby/2.3/ruby-2.3.3.tar.gz \
@@ -27,9 +28,10 @@ RUN mkdir -p /app
 WORKDIR /app
 
 COPY ./ /app
-COPY ./docker/keys/ /root/.ssh/
-RUN chown root. -R /root/.ssh/ \
-     &&  chmod 0600 /root/.ssh/id_rsa
+
+RUN groupadd --gid 1000 filecluster \
+    && useradd --uid 1000 --gid 1000 filecluster --shell /bin/bash
+
 
 COPY ./entrypoint.sh /usr/local/bin/
 RUN bundle install --jobs 20 --retry 6
