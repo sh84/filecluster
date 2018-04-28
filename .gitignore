@@ -17,3 +17,6 @@ test/tmp
 test/version_tmp
 tmp
 *.yml
+.byebug_history
+/.ssh/*
+!/.ssh/.keep
