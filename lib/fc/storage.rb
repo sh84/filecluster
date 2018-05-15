@@ -5,14 +5,13 @@ require 'fileutils'
 module FC
   class Storage < DbBase
     set_table :storages, 'name, host, dc, path, url, size, size_limit, check_time, copy_storages, url_weight, write_weight, auto_size, autosync_at'
-    
     class << self
       attr_accessor :check_time_limit, :storages_cache_time, :get_copy_storages_mutex
     end
     @check_time_limit = 120 # ttl for up status check
     @storages_cache_time = 20 # ttl for storages cache
     @get_copy_storages_mutex = Mutex.new
-    
+
     def self.curr_host
       @uname || @uname = `uname -n`.chomp
     end
@@ -23,13 +22,13 @@ module FC
       end
       list = yield(list) if block_given?
       # sort by random(free_rate * write_weight)
-      list.map{ |storage| 
-        [storage, Kernel.rand(storage.free_rate * (storage.write_weight.to_i == 0 ? 0.01 : storage.write_weight.to_i) * 1000000000)] 
+      list.map{ |storage|
+        [storage, Kernel.rand(storage.free_rate * (storage.write_weight.to_i == 0 ? 0.01 : storage.write_weight.to_i) * 1000000000)]
       }.sort{ |a, b|
         a[1] <=> b[1]
       }.map{|el| el[0]}.last
     end
-    
+
     def initialize(params = {})
       path = (params['path'] || params[:path])
       if path && !path.to_s.empty?
@@ -47,21 +46,21 @@ module FC
     def free
       size_limit - size
     end
-    
+
     def size_rate
       size.to_f / size_limit
     end
-    
+
     def free_rate
       rate = free.to_f / size_limit
       rate < 0 ? 0.0 : rate
     end
 
     def size_in_status(status)
-      FC::DB.query(%{SELECT sum(i.size) as isize 
-        FROM #{FC::ItemStorage.table_name} its 
-        join #{FC::Item.table_name} i on i.id = its.item_id 
-        where its.storage_name = '#{self.name}' 
+      FC::DB.query(%{SELECT sum(i.size) as isize
+        FROM #{FC::ItemStorage.table_name} its
+        join #{FC::Item.table_name} i on i.id = its.item_id
+        where its.storage_name = '#{self.name}'
         and its.status = '#{status}'}).first['isize'].to_i
     end
 
@@ -72,7 +71,7 @@ module FC
 
     def get_disk_free_space
       cmd = "df #{self.path.shellescape}"
-      cmd = "ssh -q -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"df #{self.path.shellescape}\"" unless self.class.curr_host == host 
+      cmd = "ssh -q -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"df #{self.path.shellescape}\"" unless self.class.curr_host == host
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
       r.split("\n").last.split(/\s+/)[3].to_i * 1024
@@ -88,16 +87,16 @@ module FC
       end
       @copy_storages_cache
     end
-    
+
     def update_check_time
       self.check_time = Time.new.to_i
       save
     end
-    
+
     def check_time_delay
       Time.new.to_i - check_time.to_i
     end
-    
+
     def up?
       check_time_delay < self.class.check_time_limit
     end
@@ -129,11 +128,11 @@ module FC
         raise r if $?.exitstatus != 0
       end
     end
-    
+
     # copy object to local_path
     def copy_to_local(file_name, local_path, speed_limit = nil)
       src_path = "#{self.path}#{file_name}"
-      
+
       r = `rm -rf #{local_path.shellescape}; mkdir -p #{File.dirname(local_path).shellescape} 2>&1`
       raise r if $?.exitstatus != 0
 
@@ -146,7 +145,7 @@ module FC
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
     end
-    
+
     # delete object from storage
     def delete_file(file_name)
       dst_path = "#{self.path}#{file_name}"
@@ -161,25 +160,26 @@ module FC
         cmd = "ssh -q -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"rm -rf #{dst_path.shellescape}\""
         r = `#{cmd} 2>&1`
         raise r if $?.exitstatus != 0
-        
+
         cmd = "ssh -q -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"ls -la #{dst_path.shellescape}\""
         r = `#{cmd} 2>/dev/null`
         raise "Path #{dst_path} not deleted" unless r.empty?
       end
     end
-    
+
     # return object size on storage
     def file_size(file_name, ignore_errors = false)
       dst_path = "#{self.path}#{file_name}"
-      
-      cmd = self.class.curr_host == host ? 
-        "du -sb #{dst_path.shellescape}" : 
+
+      cmd = self.class.curr_host == host ?
+        "du -sb #{dst_path.shellescape}" :
         "ssh -q -oBatchMode=yes -oStrictHostKeyChecking=no #{self.host} \"du -sb #{dst_path.shellescape}\""
+        puts cmd
       r = ignore_errors ? `#{cmd} 2>/dev/null` : `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
       r.to_i
     end
-    
+
     # return object md5_sum on storage
     def md5_sum(file_name)
       dst_path = "#{self.path}#{file_name}"
@@ -190,7 +190,7 @@ module FC
       raise r if $?.exitstatus != 0
       r.to_s[0..31]
     end
-    
+
     # get available storage for copy by size
     def get_proper_storage_for_copy(size, exclude = [])
       FC::Storage.select_proper_storage_for_create(get_copy_storages, size, exclude)

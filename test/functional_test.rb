@@ -42,8 +42,8 @@ class FunctionalTest < Test::Unit::TestCase
   end
 
   def setup
-    FC::Storage.any_instance.stubs(:host).returns(ENV['SSH_HOST'] || 'localhost')
-    FC::Storage.stubs(:curr_host).returns(ENV['SSH_HOST'] || 'localhost')
+    FC::Storage.any_instance.stubs(:host).returns(ssh_hostname)
+    FC::Storage.stubs(:curr_host).returns(ssh_hostname)
   end
 
   def stub_method(obj, method, method_impl)

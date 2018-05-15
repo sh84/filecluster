@@ -1,0 +1,34 @@
+version: '3.5'
+
+services:
+  filecluster2:
+    build: ./
+    depends_on:
+      - filecluster2-ssh
+    volumes:
+      - ./:/app/
+      - ./.ssh:/home/filecluster/.ssh
+      - filecluster_data2:/data
+    hostname: filecluster2
+    env_file:
+      - ./docker/development.env
+    command:  "/app/bin/fc-daemon -h filecluster2-ssh  -l debug"
+
+  filecluster2-ssh:
+    image: asigatchov/ubuntu16-sshd
+    volumes:
+      - ./.ssh:/home/filecluster/.ssh
+      - filecluster_data2:/data
+
+  filecluster2-http:
+    image: nginx
+    volumes:
+      - ./.ssh:/home/filecluster/.ssh
+      - filecluster_data2:/usr/share/nginx/html
+
+
+volumes:
+  filecluster_data2:
+    driver: local
+
+

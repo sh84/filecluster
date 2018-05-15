@@ -10,6 +10,8 @@ services:
 
   filecluster1:
     build: ./
+    env_file:
+      - ./docker/development.env
     depends_on:
       - filecluster-db
       - filecluster1-ssh
@@ -17,19 +19,28 @@ services:
       - filetest_1:/tmp/
       - ./:/app/
       - ./.ssh:/home/filecluster/.ssh
+      - filecluster_data1:/data
     hostname: filecluster1
-    env_file:
-      - ./docker/development.env
-
+    command:  "/app/bin/fc-daemon -h filecluster1-ssh  -l debug"  
 
   filecluster1-ssh:
     image: asigatchov/ubuntu16-sshd
     volumes:
       - filetest_1:/tmp/
       - ./.ssh:/home/filecluster/.ssh
+      - filecluster_data1:/data
+
+  filecluster1-http:
+    image: nginx
+    volumes:
+      - ./.ssh:/home/filecluster/.ssh
+      - filecluster_data1:/usr/share/nginx/html
 
 volumes:
   filecluster_db:
     driver: local
   filetest_1:
     driver: local
+  filecluster_data1:
+    driver: local
+  
