@@ -206,12 +206,59 @@ def storages_sync_info
   if storage = find_storage
     return puts "Storage #{storage.name} is not local." if storage.host != FC::Storage.curr_host
     puts "Get synchronization info for (#{storage.name}) storage and file system (#{storage.path}).."
+    init_console_logger
+    manual_sync(storage, true)
+    puts 'Done.'
+  end
+end
+
+def storages_sync
+  if storage = find_storage
+    return puts "Storage #{storage.name} is not local." if storage.host != FC::Storage.curr_host
+    puts "Synchronize (#{storage.name}) storage and file system (#{storage.path}).."
+    s = Readline.readline('Continue? (y/n) ', false).strip.downcase
+    puts ''
+    if s == 'y' || s == 'yes'
+      init_console_logger
+      manual_sync(storage, false)
+      s = Readline.readline('Update storage size? (y/n) ', false).strip.downcase
+      storages_update_size if s == 'y' || s == 'yes'
+    else
+      puts "Canceled."
+    end
+  end
+end
+
+def manual_sync(storage, dry_run)
+  syncer = Autosync.new(storage, dry_run)
+  syncer.run
+  puts "Deleted #{syncer.files_to_delete.size} files"
+  puts "Deleted #{syncer.items_to_delete.size} items_storages"
+  if (ARGV[3])
+    File.open(ARGV[3], 'w') do |file|
+      syncer.files_to_delete.each { |f| file.puts f }
+    end
+    puts "Save deleted files to #{ARGV[3]}"
+  end
+
+  if (ARGV[4])
+    File.open(ARGV[4], 'w') do |file|
+      syncer.items_to_delete.each { |item_storage_id| file.puts item_storage_id }
+    end
+    puts "Save deleted items_storages to #{ARGV[4]}"
+  end
+end
+
+def storages_sync_info_old
+  if storage = find_storage
+    return puts "Storage #{storage.name} is not local." if storage.host != FC::Storage.curr_host
+    puts "Get synchronization info for (#{storage.name}) storage and file system (#{storage.path}).."
     make_storages_sync(storage, false)
     puts "Done."
   end
 end
 
-def storages_sync
+def storages_sync_old
   if storage = find_storage
     return puts "Storage #{storage.name} is not local." if storage.host != FC::Storage.curr_host
     puts "Synchronize (#{storage.name}) storage and file system (#{storage.path}).."
@@ -229,6 +276,15 @@ def storages_sync
 end
 
 private
+
+def init_console_logger
+  require 'logger'
+  $log = Logger.new(STDOUT)
+  $log.level = Logger::DEBUG
+  $log.formatter = proc { |severity, datetime, progname, msg|
+    "[#{severity}]: #{msg}\n"
+  }
+end
 
 def find_storage
   name = ARGV[2]

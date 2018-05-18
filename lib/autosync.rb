@@ -2,7 +2,8 @@ require 'iostat'
 
 class Autosync
   attr_accessor :files_to_delete, :items_to_delete
-  def initialize(storage)
+  def initialize(storage, dry_run = false)
+    @dry_run = dry_run
     @start_time = Time.now.to_i - 3600
     @storage = storage
     @files_to_delete = []
@@ -23,6 +24,8 @@ class Autosync
     return if $exit_signal
     $log.debug("Autosync: Scanning DB items #{@storage.name}") if $log
     scan_db(@db_struct, '')
+    return if $exit_signal
+    delete_diffs unless @dry_run
   ensure
     @io_stat.stop
   end
@@ -33,29 +36,42 @@ class Autosync
 
   def fill_db
     $log.debug("Autosync: Reading DB items for #{@storage.name} ...") if $log
-    items = FC::DB.connect.query(%(
-      SELECT its.id, itm.name
-      FROM #{FC::Item.table_name} itm
-      JOIN #{FC::ItemStorage.table_name} its ON its.item_id = itm.id
-      WHERE its.storage_name = '#{@storage.name}'
-    ), cache_rows: false, symbolize_keys: true)
-    $log.debug("Autosync: Reading DB items for #{@storage.name} done. Items: #{items.size}") if $log
-    # make tree structure with array of values (items) on leafs
+
     db_struct = {}
-    items.each do |i|
+    last_item_storage_id = 0
+    items_count = 0
+    loop do
+      items = FC::DB.connect.query(%(
+        SELECT its.id, itm.name
+        FROM #{FC::Item.table_name} itm
+        JOIN #{FC::ItemStorage.table_name} its ON its.item_id = itm.id
+        WHERE its.storage_name = '#{@storage.name}'
+        AND its.status = 'ready'
+        AND its.id > #{last_item_storage_id}
+        ORDER BY its.id
+        LIMIT 10000
+      ), cache_rows: false, symbolize_keys: true)
       break if $exit_signal
-      ref = db_struct
-      path = i[:name].split('/')
-      last_idx = path.size - 1
-      path.each_with_index do |part, idx|
-        if idx == last_idx
-          ref[part] = [false, i[:id]]
-        else
-          ref[part] ||= {}
-          ref = ref[part]
+
+      # make tree structure with array of values (items) on leafs
+      items.each do |i|
+        items_count += 1
+        last_item_storage_id = i[:id]
+        ref = db_struct
+        path = i[:name].split('/')
+        last_idx = path.size - 1
+        path.each_with_index do |part, idx|
+          if idx == last_idx
+            ref[part] = [false, i[:id]]
+          else
+            ref[part] ||= {}
+            ref = ref[part]
+          end
         end
       end
+      break unless items.size == 10_000
     end
+    $log.debug("Autosync: Reading DB items for #{@storage.name} done. Items: #{items_count}") if $log
     db_struct
   end
 
