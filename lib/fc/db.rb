@@ -147,7 +147,7 @@ module FC
           id bigint NOT NULL AUTO_INCREMENT,
           name varchar(1024) NOT NULL DEFAULT '',
           tag varchar(255) DEFAULT NULL,
-          outer_id int DEFAULT NULL,
+          outer_id bigint DEFAULT NULL,
           policy_id int NOT NULL,
           dir tinyint(1) NOT NULL DEFAULT 0,
           size bigint NOT NULL DEFAULT 0,
