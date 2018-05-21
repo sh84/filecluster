@@ -90,6 +90,7 @@ while true do
     storages_check
     update_tasks
     run_tasks
+    autosync
   end
   $log.debug('sleep')
   sleep FC::Var.get('daemon_cycle_time', 30).to_i

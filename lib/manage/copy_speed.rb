@@ -69,6 +69,6 @@ end
 
 def find_host
   host = ARGV[2].to_s.strip
-  puts "Storage with host #{host} not found." unless (['all'] + all_hosts).index(host)
+  puts "Storage with host \"#{host}\" not found." unless (['all'] + all_hosts).index(host)
   host
 end

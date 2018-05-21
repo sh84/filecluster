@@ -336,5 +336,9 @@ module FC
       FC::DB.query("ALTER TABLE #{@prefix}storages ADD COLUMN auto_size bigint(20) DEFAULT 0")
     end
 
+    def self.migrate_5
+      FC::DB.query("ALTER TABLE #{@prefix}storages ADD COLUMN autosync_at bigint(11) DEFAULT 0")
+    end
+
   end
 end

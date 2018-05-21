@@ -35,7 +35,26 @@ module FC
       end
       @all_vars 
     end
-    
+
+    def self.get_autosync
+      sync_interval = {
+        'all' => 604_800 # default 7 days in seconds
+      }
+      sync_interval.merge! Hash[get('autosync_intervals').to_s.split(';;').map { |v| v.split('::') }]
+      sync_interval.each { |host, val| sync_interval[host] = val.to_i > 0 ? val.to_i : 0 }
+    end
+
+    def self.set_autosync(host, val)
+      current = get_autosync
+      if val.nil? || val == ''
+        current.delete(host)
+      else
+        current[host] = val
+      end
+      list = current.map { |h, v| "#{h}::#{v}" }.join(';;')
+      set('autosync_intervals', list)
+    end
+
     def self.get_speed_limits
       limits = {
         'all' => nil

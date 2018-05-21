@@ -6,3 +6,5 @@ require "manage/copy_rules"
 require "manage/var"
 require "manage/item"
 require "manage/copy_speed"
+require "manage/autosync"
+require 'autosync'
