@@ -52,9 +52,9 @@ if s == "y" || s == "yes"
   end
   unless default_db_config
     print "Save to config..   "
-    options.select!{|key, val| descriptions[key][:save]}
+    config = options.select { |key, _| descriptions[key][:save] }
     File.open(File.expand_path(File.dirname(__FILE__))+'/db.yml', 'w') do |f|
-      f.write(options.to_yaml)
+      f.write(config.to_yaml)
     end
     puts "ok"
   end
