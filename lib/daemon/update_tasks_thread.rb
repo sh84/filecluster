@@ -9,7 +9,7 @@ class UpdateTasksThread < BaseThread
     count = 0
     limit = FC::Var.get("daemon_tasks_#{type}_group_limit", 1000).to_i
     tasks = (type == :copy ? $tasks_copy : $tasks_delete) 
-    $storages.each do |storage|
+    $storages.select { |storage| storage.write_weight.to_i >= 0 }.each do |storage|
       tasks[storage.name] = [] unless tasks[storage.name]
       ids = tasks[storage.name].map(&:id) + $curr_tasks.compact.map(&:id)
       if ids.length > limit*2

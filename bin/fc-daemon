@@ -93,7 +93,9 @@ while true do
     autosync
   end
   $log.debug('sleep')
-  sleep FC::Var.get('daemon_cycle_time', 30).to_i
+  sleep_time = FC::Var.get('daemon_cycle_time', 30).to_f
+  sleep_time = 0.3 if sleep_time < 0.3
+  sleep sleep_time
   alive_time = Time.new.to_i - start_time
   if !$exit_signal && alive_time > FC::Var.get('daemon_restart_period', 86400).to_i
     $log.info("Self restart, #{alive_time} seconds up")

@@ -21,7 +21,8 @@ end
 
 def run_global_daemon
   $log.debug('Run global daemon check')
-  timeout = FC::Var.get('daemon_global_wait_time', 120).to_i
+  timeout = FC::Var.get('daemon_global_wait_time', 120).to_f
+  timeout = 0.3 if timeout < 0.3
   r = FC::DB.query("SELECT #{FC::DB.prefix}vars.*, UNIX_TIMESTAMP() as curr_time FROM #{FC::DB.prefix}vars WHERE name='global_daemon_host'").first
   if !r || r['curr_time'].to_i - r['time'].to_i > timeout
     $log.debug('Set global daemon host to current')

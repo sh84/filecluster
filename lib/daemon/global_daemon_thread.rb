@@ -39,8 +39,8 @@ class GlobalDaemonThread < BaseThread
         "ist.item_id = i.id AND i.copies IN (#{copies}) AND i.status = 'ready' AND ist.status <> 'delete' GROUP BY i.id LIMIT #{limit}"
       r = FC::DB.query(sql)
       r.each do |row|
-        $log.info("GlobalDaemonThread: new item_storage for item #{row['item_id']}")
         item_storages = row['storages'].split(',')
+        $log.info("GlobalDaemonThread: new item_storage for item #{row['item_id']}, exclude #{item_storages}")
         if row['item_copies'] != item_storages.count
           $log.warn("GlobalDaemonThread: ItemStorage count <> item.copies for item #{row['item_id']}")
         elsif item_storages.count >= policy.copies.to_i

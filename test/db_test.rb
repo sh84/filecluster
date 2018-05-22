@@ -118,6 +118,13 @@ class DbTest < Test::Unit::TestCase
     FC::DB.logger = nil
   end
 
+  should "item time update" do
+    item = FC::Item.new(:name => 'bla bla bla', :policy_id => @item.policy_id)
+    item.save
+    item.reload
+    assert((item.time - Time.new.to_i).abs <= 1)
+  end
+
   should "items" do
     assert @items.count > 0, 'Items not loaded'
     @items.each{|item| assert item.time > 0, "Item (id=#{item.id}) time = 0"}

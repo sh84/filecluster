@@ -17,8 +17,8 @@ class DaemonTest < Test::Unit::TestCase
 
       @@errors_count = FC::Error.where.count
 
-      FC::Var.set('daemon_cycle_time', 1)
-      FC::Var.set('daemon_global_wait_time', 1)
+      FC::Var.set('daemon_cycle_time', 0)
+      FC::Var.set('daemon_global_wait_time', 0)
       FC::Var.set('daemon_global_error_items_storages_ttl', 2)
       FC::Var.set('daemon_global_error_items_ttl', 2)
       @stotage_checks = 0
@@ -72,7 +72,7 @@ class DaemonTest < Test::Unit::TestCase
         :create_storages => 'host1-sda,host1-sdb,host1-sdc',
         :copies => 2,
         :name => 'policy 1',
-        :delete_deferred_time => 7
+        :delete_deferred_time => 5
       )
       @@policy.save
 
@@ -126,9 +126,22 @@ class DaemonTest < Test::Unit::TestCase
 
     @@policy.copies = 2
     @@policy.save
+
+    item_size = `du -sb #{@@test_file_path} 2>&1`.to_i
+    storage = FC::Storage.where('name = ?', 'host1-sdc').first
+    storage.write_weight = -1
+    storage.save
     item_storage = FC::ItemStorage.where('item_id = ? AND storage_name = ?', @item1.id, 'host1-sdc').first
     item_storage.status = 'delete'
     item_storage.save
+
+    sleep 2
+    puts 'Check no delete' if @@debug
+    assert_equal item_size, `du -sb /tmp/host1-sdc/bla/bla/test1 2>&1`.to_i
+
+    storage = FC::Storage.where('name = ?', 'host1-sdc').first
+    storage.write_weight = 0
+    storage.save
 
     sleep 2
     puts 'Check delete' if @@debug
@@ -144,7 +157,7 @@ class DaemonTest < Test::Unit::TestCase
     @item3.status = 'error'
     @item3.save
 
-    sleep 6
+    sleep 4
     puts 'Check immediate_delete' if @@debug
     assert_raise(RuntimeError, 'Item not deleted after mark_deleted') { @item1.reload }
     assert_equal 0, @item2.get_item_storages.count, "ItemStorages not deleted after status='error'"
@@ -154,7 +167,7 @@ class DaemonTest < Test::Unit::TestCase
     assert_equal 'deferred_delete', @item4.status, 'Item not deferred_delete after mark_deleted'
     assert_same_elements %w(ready ready ready), @item4.get_item_storages.map(&:status)
 
-    sleep 6
+    sleep 4
     puts 'Check mark_deleted' if @@debug
     assert_raise(RuntimeError, 'Item not deleted after mark_deleted') { @item4.reload }
   end
