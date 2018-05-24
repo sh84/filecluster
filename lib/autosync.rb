@@ -50,7 +50,7 @@ class Autosync
         AND its.id > #{last_item_storage_id}
         ORDER BY its.id
         LIMIT 10000
-      ), cache_rows: false, symbolize_keys: true)
+      ), cache_rows: false, symbolize_keys: true).to_a
       break if $exit_signal
 
       # make tree structure with array of values (items) on leafs
