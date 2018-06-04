@@ -43,5 +43,12 @@ module FC
         local_storages
       end
     end
+
+    def load(data: {})
+      self.name = data[:name] unless name
+      self.create_storages = data[:create_storages] if data[:create_storages]
+      self.copies = data[:copies].to_i if data[:copies]
+      self.delete_deferred_time = data[:delete_deferred_time].to_i if data[:delete_deferred_time]
+    end
   end
 end

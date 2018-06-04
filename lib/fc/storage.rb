@@ -195,5 +195,25 @@ module FC
     def get_proper_storage_for_copy(size, exclude = [])
       FC::Storage.select_proper_storage_for_create(get_copy_storages, size, exclude)
     end
+
+    def dump
+      super(%i[check_time autosync_at])
+    end
+
+    def load(data: {})
+      unless name
+        self.name = data[:name]
+        self.host = data[:host] if data[:host]
+      end
+      self.size = data[:size].to_i if data[:size]
+      self.size_limit = data[:size_limit].to_i if data[:size_limit]
+      self.dc = data[:dc] if data[:dc]
+      self.path = data[:path] if data[:path]
+      self.url = data[:url] if data[:url]
+      self.write_weight = data[:write_weight].to_i if data[:write_weight]
+      self.url_weight = data[:url_weight].to_i if data[:url_weight]
+      self.auto_size = data[:auto_size].to_i if data[:auto_size]
+      self.copy_storages = data[:copy_storages] if data[:copy_storages]
+    end
   end
 end

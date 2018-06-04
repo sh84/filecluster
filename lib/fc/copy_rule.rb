@@ -56,6 +56,11 @@ module FC
       $SELF = 0
       r ? true : false
     end
+
+    def load(data: {})
+      self.rule = data[:rule] unless rule
+      self.copy_storages = data[:copy_storages] if data[:copy_storages]
+    end
     
     def test
       storage = FC::Storage.new(
