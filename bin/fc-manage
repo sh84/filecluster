@@ -89,7 +89,16 @@ Command:
    add_local <storage name> <path> <policy id/name> <tag> <outer_id>  add file in local storage as item (as <path> name) with policy, tag & outer_id is not required 
    add <path> <name> <policy id/name>                                 add file as item <name> with policy
    rm <name>                                                          delete item
-}]
+}],
+  'schema' => [
+    'use external configuration to manage schema definition (yaml formatted)',
+    %q{Usage: fc-manage schema <command>
+  Command:
+    create <config file>.yml [--force]        creates storages/policies/db connection, fails if any already exists
+      Options: --force                        force to warn and replace objects instead of fail
+    apply  <config file>.yml                  applying storages/policies properties, warn for missing objects
+    dump   <target file>.yml                  loads out existing storages/policies into single target file
+  }]
 }
 desc = %q{Get info and manage for storages, policies and items.
 Usage: fc-manage [options] <command> [<args>]
