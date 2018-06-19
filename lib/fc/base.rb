@@ -111,7 +111,9 @@ module FC
     end
 
     def load(data: {})
-      raise 'This method must be overrided'
+      self.class.table_fields.each do |field|
+        send("#{field}=", data[field.to_sym]) if data[field.to_sym]
+      end
     end
 
     def dump(exclude = [])
