@@ -56,7 +56,7 @@ module FC
       $SELF = 0
       r ? true : false
     end
-    
+
     def test
       storage = FC::Storage.new(
         :id => 1,

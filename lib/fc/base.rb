@@ -100,5 +100,30 @@ module FC
       FC::DB.query("DELETE FROM #{self.class.table_name} WHERE id=#{@id.to_i}") if @id
     end
     
+    def self.apply!(data: {}, key_field: :name, update_only: false)
+      return nil unless data[key_field]
+      obj_instance = where("#{key_field} = ?", data[key_field]).first
+      return "#{name} \"#{data[key_field]}\" not found" if obj_instance.nil? && update_only
+      obj_instance ||= new
+      obj_instance.load(data: data)
+      obj_instance.save
+      obj_instance
+    end
+
+    def load(data: {})
+      self.class.table_fields.each do |field|
+        send("#{field}=", data[field.to_sym]) if data[field.to_sym]
+      end
+    end
+
+    def dump(exclude = [])
+      obj_dump = {}
+      self.class.table_fields.each do |field|
+        sym_field = field.to_sym
+        next if exclude.include?(sym_field)
+        obj_dump[sym_field] = database_fields[field]
+      end
+      obj_dump
+    end
   end
 end
