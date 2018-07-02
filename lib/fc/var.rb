@@ -38,7 +38,7 @@ module FC
 
     def self.get_autosync
       sync_interval = {
-        'all' => 604_800 # default 7 days in seconds
+        'all' => 0 # default never
       }
       sync_interval.merge! Hash[get('autosync_intervals').to_s.split(';;').map { |v| v.split('::') }]
       sync_interval.each { |host, val| sync_interval[host] = val.to_i > 0 ? val.to_i : 0 }
