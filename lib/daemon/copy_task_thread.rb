@@ -14,6 +14,16 @@ class CopyTaskThread < BaseThread
   end
   
   def make_copy(task)
+    begin
+      task.reload
+      if task.status != 'copy'
+        $log.warn("Task ##{task.id} status #{task.status} != copy, skip")
+        return
+      end
+    rescue
+      $log.warn("Task ##{task.id} not found in db, skip")
+      return
+    end
     sleep 0.1 while $copy_count > FC::Var.get('daemon_copy_tasks_per_host_limit', 10).to_i
     limit = FC::Var.get_current_speed_limit
     speed_limit = nil
