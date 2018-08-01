@@ -340,5 +340,8 @@ module FC
       FC::DB.query("ALTER TABLE #{@prefix}storages ADD COLUMN autosync_at bigint(11) DEFAULT 0")
     end
 
+    def self.migrate_6
+      FC::DB.query("ALTER TABLE #{@prefix}storages ADD COLUMN http_check_time int(11) DEFAULT 0")
+    end
   end
 end

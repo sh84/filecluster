@@ -4,7 +4,7 @@ require 'fileutils'
 
 module FC
   class Storage < DbBase
-    set_table :storages, 'name, host, dc, path, url, size, size_limit, check_time, copy_storages, url_weight, write_weight, auto_size, autosync_at'
+    set_table :storages, 'name, host, dc, path, url, size, size_limit, check_time, copy_storages, url_weight, write_weight, auto_size, autosync_at, http_check_time'
     
     class << self
       attr_accessor :check_time_limit, :storages_cache_time, :get_copy_storages_mutex
@@ -93,13 +93,26 @@ module FC
       self.check_time = Time.new.to_i
       save
     end
-    
+
+    def update_http_check_time
+      self.http_check_time = Time.new.to_i
+      save
+    end
+
     def check_time_delay
       Time.new.to_i - check_time.to_i
+    end
+
+    def http_check_time_delay
+      Time.new.to_i - http_check_time.to_i
     end
     
     def up?
       check_time_delay < self.class.check_time_limit
+    end
+
+    def http_up?
+      http_check_time_delay < self.class.check_time_limit
     end
 
     def self.speed_limit_to_rsync_opt(speed_limit)
@@ -197,7 +210,7 @@ module FC
     end
 
     def dump
-      super(%i[check_time autosync_at])
+      super(%i[check_time autosync_at http_check_time])
     end
 
     def load(data: {})

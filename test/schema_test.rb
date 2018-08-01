@@ -45,7 +45,7 @@ class SchemaTest < Test::Unit::TestCase
     dump = create_dump
     assert_equal 1, dump[:storages].size
     FC::Storage.table_fields.each do |field|
-      next if %w[check_time autosync_at].include? field # not dumping attrs
+      next if %w[check_time autosync_at http_check_time].include? field # not dumping attrs
       assert_equal storage.send(field), dump[:storages][0][field.to_sym], "field \"#{field}\" not dumped correctly"
     end
     assert_equal 1, dump[:copy_rules].size
@@ -68,7 +68,7 @@ class SchemaTest < Test::Unit::TestCase
     policy = FC::Policy.where.first
     rule = FC::CopyRule.where.first
     FC::Storage.table_fields.each do |field|
-      next if %w[check_time autosync_at].include? field # not dumping attrs
+      next if %w[check_time autosync_at http_check_time].include? field # not dumping attrs
       assert_equal storage.send(field), schema[:storages][0][field.to_sym], "field \"#{field}\" not loaded correctly"
     end
     FC::CopyRule.table_fields.each do |field|
@@ -141,7 +141,7 @@ class SchemaTest < Test::Unit::TestCase
     rule.reload
 
     FC::Storage.table_fields.each do |field|
-      next if %w[check_time autosync_at].include? field # not dumping attrs
+      next if %w[check_time autosync_at http_check_time].include? field # not dumping attrs
       assert_equal storage.send(field), schema[:storages][0][field.to_sym], "field \"#{field}\" not loaded correctly"
     end
     FC::CopyRule.table_fields.each do |field|
