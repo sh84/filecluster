@@ -25,6 +25,14 @@ class ItemTest < Test::Unit::TestCase
     end
   end
   
+  setup do
+    @@storages.each do |s|
+      s.check_time = 0
+      s.http_check_time = 0
+      s.save
+    end
+  end
+
   should "create_from_local" do    policy = FC::Policy.new
     assert_raise(ArgumentError) { FC::Item.create_from_local }
     assert_raise(ArgumentError) { FC::Item.create_from_local '/bla/bla' }
@@ -47,7 +55,8 @@ class ItemTest < Test::Unit::TestCase
     @@item.save
   end
 
-  should 'mark_deleted' do    @@item.mark_deleted
+  should 'mark_deleted' do
+    @@item.mark_deleted
     @@item.reload
     assert_equal 'deferred_delete', @@item.status
     @@item_storages.each do |item_storage| 
@@ -56,27 +65,51 @@ class ItemTest < Test::Unit::TestCase
     end
   end
   
-  should "make_item_storage" do    storage_size = @@storages[2].size.to_i
+  should "make_item_storage" do
+    storage_size = @@storages[2].size.to_i
     assert_kind_of FC::ItemStorage, @@item.make_item_storage(@@storages[2])
     assert_equal storage_size+@@item.size, @@storages[2].size
   end
   
-  should "get_item_storages" do    assert_same_elements @@item_storages.map(&:id), @@item.get_item_storages.map(&:id)
+  should "get_item_storages" do
+    assert_same_elements @@item_storages.map(&:id), @@item.get_item_storages.map(&:id)
   end
   
-  should "item get_available_storages" do    @@storages.each{|s| s.check_time = 0; s.save}
+  should 'item get_available_storages' do
     @@storages[0].update_check_time
     assert_equal 1, @@item.get_available_storages.count
     assert_equal @@storages[0].name, @@item.get_available_storages.first.name
   end
-  
-  should "item urls" do    @@storages.each{|s| s.check_time = 0; s.save}
+
+  should 'item get_available_storages (http_up? influence)' do
+    # all storages have http_up? == false
+    storages = @@item_storages.map do |is|
+      @@storages.detect { |s| s.name == is.storage_name }
+    end.compact
+    storages.each do |s|
+      assert !s.http_up?
+    end
+    assert storages.size > 1
+    storages.each(&:update_check_time)
+    assert_equal storages.size, @@item.get_available_storages.count
+
+    # set one storage http_up? == true
+    storages[0].update_http_check_time
+    assert storages[0].http_up?
+
+    assert_equal 1, @@item.get_available_storages.count
+    assert_equal storages[0].name, @@item.get_available_storages.first.name
+    assert_equal 'http://rec1/sda/test item', @@item.url
+  end
+
+  should "item urls" do
     assert_equal 0, @@item.urls.count
     @@storages.each(&:update_check_time)
     assert_same_elements ["http://rec1/sda/test item", "http://rec2/sda/test item"], @@item.urls
   end
   
-  should "item url by url_weight" do    @@storages.each(&:update_check_time)
+  should "item url by url_weight" do
+    @@storages.each(&:update_check_time)
     @@storages.each{|s| s.url_weight = -1; s.save}
     assert_raise(RuntimeError) { @@item.url }
     
