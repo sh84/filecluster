@@ -9,6 +9,22 @@ class CheckThread < BaseThread
     else 
       error "Storage #{storage.name} with path #{storage.path} not writable"
     end
+    check_http(storage)
     $log.debug("CheckThread: Finish stotage check for #{storage_name}")
+  end
+
+  def check_http(storage)
+    url = "#{storage.url}healthcheck"
+    uri = URI.parse(url.sub(%r{^\/\/}, 'http://'))
+    request = Net::HTTP.new(uri.host, uri.port)
+    request.read_timeout = request.open_timeout = 2
+    resp = request.start { |http| http.get(uri.path) } rescue nil
+    if resp && resp.code.to_i == 200 && resp.body.to_s.chomp == 'OK'
+      storage.update_http_check_time
+    else
+      error "Storage #{storage.name} with url #{storage.url} not readable"
+    end
+  rescue => err
+    $log.error("CheckThread: check_http error: #{err}")
   end
 end
