@@ -343,5 +343,10 @@ module FC
     def self.migrate_6
       FC::DB.query("ALTER TABLE #{@prefix}storages ADD COLUMN http_check_time int(11) DEFAULT 0")
     end
+
+    def self.migrate_7
+      FC::DB.query("ALTER TABLE #{@prefix}storages ADD COLUMN shared_group varchar(1024) NULL DEFAULT NULL")
+      FC::DB.query("CREATE INDEX shared_group_idx ON #{@prefix}storages(shared_group)")
+    end
   end
 end

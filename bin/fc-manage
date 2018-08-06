@@ -98,6 +98,15 @@ Command:
       Options: force                          force to warn and replace objects instead of fail
     apply  <config file>.yml                  applying storages/policies properties, warn for missing objects
     dump   <target file>.yml                  loads out existing storages/policies into single target file
+  }],
+  'group' => [
+    'show and manage shared storages groups',
+    %q{Usage: fc-manage group <command>
+  Command:
+    list    show shared storages groups and storages in it
+    add     creates new shared group
+    change  changing existing shared group
+    remove  removing shared storages group
   }]
 }
 desc = %q{Get info and manage for storages, policies and items.

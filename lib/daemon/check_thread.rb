@@ -14,6 +14,7 @@ class CheckThread < BaseThread
   end
 
   def check_http(storage)
+    return if storage.url.to_s.empty?
     url = "#{storage.url}healthcheck"
     uri = URI.parse(url.sub(%r{^\/\/}, 'http://'))
     request = Net::HTTP.new(uri.host, uri.port)

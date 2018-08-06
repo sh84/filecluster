@@ -8,4 +8,5 @@ require "manage/item"
 require "manage/copy_speed"
 require "manage/autosync"
 require "manage/schema"
+require 'manage/group'
 require 'autosync'

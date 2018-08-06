@@ -165,10 +165,24 @@ module FC
     end
     
     def get_available_storages
+      # getting original item storages
       r = FC::DB.query("SELECT st.* FROM #{FC::Storage.table_name} as st, #{FC::ItemStorage.table_name} as ist WHERE 
         ist.item_id = #{id} AND ist.status='ready' AND ist.storage_name = st.name")
       istorages = r.map { |data| FC::Storage.create_from_fiels(data) }
-                   .select { |storage| storage.up? && storage.url_weight.to_i >= 0 }
+
+      # add shared storages
+      shared_storages = []
+      istorages.each do |s|
+        next if s.shared_group.to_s.empty?
+        shared_storages << FC::Storage.where('shared_group = ?', s.shared_group)
+      end
+      istorages += shared_storages.flatten
+      istorages.uniq!(&:name)
+
+      # filtering by up and read
+      istorages.select! { |storage| storage.up? && storage.url_weight.to_i >= 0 }
+
+      # filter by http_up if any
       http_up_storages = istorages.select(&:http_up?)
       istorages = http_up_storages if http_up_storages.any?
       istorages

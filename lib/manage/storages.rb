@@ -31,8 +31,10 @@ def storages_show
   Free:           #{size_to_human storage.free} (#{(storage.free_rate*100).to_i}%) 
   Size limit:     #{size_to_human storage.size_limit}
   Size type:      #{storage.auto_size? ? "Auto (min #{ size_to_human storage.auto_size })" : 'Static'}
+  Shared group:   #{storage.shared_group}
   Copy storages:  #{storage.copy_storages}
   Check time:     #{storage.check_time ? "#{Time.at(storage.check_time)} (#{storage.check_time_delay} seconds ago)" : ''}
+  Http check time #{storage.http_check_time ? "#{Time.at(storage.http_check_time)} (#{storage.http_check_time_delay} seconds ago)" : ''}
   Status:         #{storage.up? ? colorize_string('UP', :green) : colorize_string('DOWN', :red)}
   Items storages: #{count}}
   end
@@ -55,14 +57,26 @@ def storages_add
     auto_size = 0
     size_limit = human_to_size stdin_read_val('Size limit') {|val| "Size limit not is valid size." unless human_to_size(val)}
   end
-
+  shared_group = stdin_read_val('Shared group', true)
   copy_storages = stdin_read_val('Copy storages', true)
   storages = FC::Storage.where.map(&:name)
   copy_storages = copy_storages.split(',').select{|s| storages.member?(s.strip)}.join(',').strip
   begin
     path = path +'/' unless path[-1] == '/'
     path = '/' + path unless path[0] == '/'
-    storage = FC::Storage.new(:name => name, :dc => dc, :host => host, :path => path, :url => url, :size_limit => size_limit, :copy_storages => copy_storages, :url_weight => url_weight, :write_weight => write_weight, :auto_size => auto_size)
+    storage = FC::Storage.new(
+      :name => name,
+      :dc => dc,
+      :host => host,
+      :path => path,
+      :url => url,
+      :size_limit => size_limit,
+      :copy_storages => copy_storages,
+      :url_weight => url_weight,
+      :write_weight => write_weight,
+      :auto_size => auto_size,
+      :shared_group => shared_group.empty? ? nil : shared_group
+    )
     print 'Calc current size.. '
     size = storage.file_size('', true)
     puts "ok"
@@ -76,6 +90,11 @@ def storages_add
     size_limit = storage.get_real_size
   end
   free = size_limit - size
+  unless storage_shared_group_valid?(storage)
+    puts 'Cancelled'
+    exit
+  end
+
   puts %Q{\nStorage
   Name:         #{name}
   DC:           #{dc}
@@ -88,6 +107,7 @@ def storages_add
   Free:         #{size_to_human free} (#{(free.to_f*100 / size_limit).to_i}%)
   Size type:    #{storage.auto_size? ? "Auto (min #{ size_to_human(auto_size) })" : 'Static' }
   Size limit:   #{size_to_human size_limit}
+  Shared group: #{shared_group}
   Copy storages #{copy_storages}}
   s = Readline.readline("Continue? (y/n) ", false).strip.downcase
   puts ""
@@ -152,6 +172,7 @@ def storages_change
       auto_size = 0
       size_limit = stdin_read_val("Size (now #{size_to_human(storage.size_limit)})", true) {|val| "Size limit not is valid size." if !val.empty? && !human_to_size(val)}
     end
+    shared_group = stdin_read_val("Shared group (now #{storage.shared_group})", true)
     copy_storages = stdin_read_val("Copy storages (now #{storage.copy_storages})", true)
     
     storage.dc = dc unless dc.empty?
@@ -170,9 +191,14 @@ def storages_change
     storage.url_weight = url_weight.to_i unless url_weight.empty?
     storage.write_weight = write_weight.to_i unless write_weight.empty?
     storage.size_limit = human_to_size(size_limit) unless size_limit.empty?
+    storage.shared_group = shared_group unless shared_group.empty?
     storages = FC::Storage.where.map(&:name)
     storage.copy_storages = copy_storages.split(',').select{|s| storages.member?(s.strip)}.join(',').strip unless copy_storages.empty?
-    
+    unless storage_shared_group_valid?(storage)
+      puts 'Cancelled'
+      exit
+    end
+
     puts %Q{\nStorage
     Name:          #{storage.name}
     DC:            #{storage.dc}
@@ -185,6 +211,7 @@ def storages_change
     Free:          #{size_to_human storage.free} (#{(storage.free_rate*100).to_i}%)
     Size type:     #{storage.auto_size? ? "Auto (Min #{size_to_human auto_size})" : 'Static' }
     Size limit:    #{size_to_human storage.size_limit }
+    Shared group:  #{storage.shared_group}
     Copy storages: #{storage.copy_storages}}
     s = Readline.readline("Continue? (y/n) ", false).strip.downcase
     puts ""
@@ -371,4 +398,20 @@ def make_storages_sync(storage, make_delete, silent = false, no_reconnect = fals
     end
     puts "Save deleted items_storages to #{ARGV[4]}" unless silent
   end
+end
+
+def storage_shared_group_valid?(storage)
+  valid = true
+  return valid if storage.shared_group.to_s.empty?
+  storages_to_copy = storage.copy_storages.to_s.split(',')
+  FC::Storage.where('shared_group = ?', storage.shared_group).each do |s|
+    if storages_to_copy.include?(s.name)
+      puts "Storage \"#{s.name}\" cant't be in copy storages (shared storage)!"
+      valid = false
+    end
+    next unless s.copy_storages.to_s.split(',').include?(storage.name)
+    puts "Storage \"#{s.name}\" using \"#{storage.name}\" as copy storage!"
+    valid = false
+  end
+  valid
 end

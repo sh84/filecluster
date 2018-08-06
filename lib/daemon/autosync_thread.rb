@@ -4,6 +4,7 @@ class AutosyncThread < BaseThread
   attr_accessor :start_time, :files_to_delete, :items_to_delete
   def go(storages)
     storages.each do |storage|
+      next unless storage.shared_group.to_s.empty? # don't autosync shared storages
       $log.debug("AutosyncThread: Run storage synchronization for #{storage.name}")
       Autosync.new(storage).run
       storage.reload
