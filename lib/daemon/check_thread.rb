@@ -1,4 +1,5 @@
 class CheckThread < BaseThread
+  require "net/http"
   def go(storage_name)
     $log.debug("CheckThread: Run stotage check for #{storage_name}")
     storage = $storages.detect{|s| s.name == storage_name}
