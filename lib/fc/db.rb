@@ -343,5 +343,10 @@ module FC
     def self.migrate_6
       FC::DB.query("ALTER TABLE #{@prefix}storages ADD COLUMN http_check_time int(11) DEFAULT 0")
     end
+
+    def self.migrate_7
+      FC::DB.query("INSERT IGNORE INTO #{@prefix}vars SET name='daemon_global_delete_limit', val='1000', descr='limits number of deleted items per query'")
+      FC::DB.query("INSERT IGNORE INTO #{@prefix}vars SET name='daemon_global_delete_delay', val='1', descr='delay in seconds between items delete query'")
+    end
   end
 end
