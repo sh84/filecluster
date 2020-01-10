@@ -99,14 +99,12 @@ class GlobalDaemonThread < BaseThread
     item_ids = r.map{|row| row['id']}
     limit = FC::Var.get('daemon_global_delete_limit', 1000).to_i
     limit = 1000 if limit < 2
-    delay = FC::Var.get('daemon_global_delete_delay', 1).to_i
+    delay = FC::Var.get('daemon_global_delete_delay', 1).to_f
     item_ids.each_slice(limit) do |ids|
-      if ids.count > 0
-        ids = ids.join(',')
-        FC::DB.query("DELETE FROM #{FC::Item.table_name} WHERE id in (#{ids})")
-        $log.info("GlobalDaemonThread: delete items #{ids}")
-        sleep delay if delay > 0
-      end
+      ids = ids.join(',')
+      FC::DB.query("DELETE FROM #{FC::Item.table_name} WHERE id in (#{ids})")
+      $log.info("GlobalDaemonThread: delete items #{ids}")
+      sleep delay if delay > 0
     end
   end
   
