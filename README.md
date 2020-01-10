@@ -64,6 +64,8 @@ Can be used the following variables:
 |daemon_global_error_items_ttl|86400|ttl for items with error status before delete|
 |daemon_global_error_items_storages_ttl|86400|ttl for items_storages with error status before delete|
 |daemon_restart_period|86400|time between fc-daemon self restart|
+|daemon_global_delete_limit|1000|limits number of deleted items per query|
+|daemon_global_delete_dela|1|delay in seconds(float) between items delete query|
 
 ## Usage
 
