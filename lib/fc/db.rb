@@ -54,7 +54,7 @@ module FC
       @prefix = @options[:prefix].to_s if @options[:prefix]
       @connects = {} unless @connects
       @connects[Thread.current.object_id] = connection
-      @connect_block = nil
+      @connect_block = nil unless @options[:keep_lazy_connection]
     end
 
     def self.connect
