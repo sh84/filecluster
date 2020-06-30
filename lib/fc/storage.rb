@@ -137,7 +137,7 @@ module FC
         raise r if $?.exitstatus != 0
       else
         local_path += '/' if File.stat(local_path).directory?
-        cmd = "ionice -c 2 -n 7 rsync -e \"ssh -o StrictHostKeyChecking=no\" -a --no-t #{FC::Storage.speed_limit_to_rsync_opt(speed_limit)}--rsync-path=\"#{recreate_dirs_cmd} && ionice -c 2 -n 7 rsync\" #{local_path.shellescape} #{self.host}:\"#{dst_path.shellescape}\""
+        cmd = "ionice -c 2 -n 7 rsync -e \"ssh -o StrictHostKeyChecking=no\" -a #{FC::Storage.speed_limit_to_rsync_opt(speed_limit)}--rsync-path=\"#{recreate_dirs_cmd} && ionice -c 2 -n 7 rsync\" #{local_path.shellescape} #{self.host}:\"#{dst_path.shellescape}\""
         r = `#{cmd} 2>&1`
         raise r if $?.exitstatus != 0
       end
@@ -155,7 +155,7 @@ module FC
       r = `#{cmd} 2>&1`
       src_path += '/' if $?.exitstatus == 0
 
-      cmd = "ionice -c 2 -n 7 rsync -e \"ssh -o StrictHostKeyChecking=no\" -a --no-t #{FC::Storage.speed_limit_to_rsync_opt(speed_limit)}--rsync-path=\"ionice -c 2 -n 7 rsync\" #{self.host}:\"#{src_path.shellescape}\" #{local_path.shellescape}"
+      cmd = "ionice -c 2 -n 7 rsync -e \"ssh -o StrictHostKeyChecking=no\" -a #{FC::Storage.speed_limit_to_rsync_opt(speed_limit)}--rsync-path=\"ionice -c 2 -n 7 rsync\" #{self.host}:\"#{src_path.shellescape}\" #{local_path.shellescape}"
       r = `#{cmd} 2>&1`
       raise r if $?.exitstatus != 0
     end
