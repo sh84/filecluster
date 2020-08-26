@@ -95,6 +95,7 @@ module FC
     end
 
     def update_http_check_time
+      return unless http_check_enabled?
       self.http_check_time = Time.new.to_i
       save
     end
@@ -104,9 +105,13 @@ module FC
     end
 
     def http_check_time_delay
-      Time.new.to_i - http_check_time.to_i
+      http_check_enabled? ? Time.new.to_i - http_check_time.to_i : 0
     end
     
+    def http_check_enabled?
+      http_check_time.to_i >= 0
+    end
+
     def up?
       check_time_delay < self.class.check_time_limit
     end
