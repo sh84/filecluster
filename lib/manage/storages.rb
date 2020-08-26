@@ -20,21 +20,22 @@ def storages_show
   if storage = find_storage
     count = FC::DB.query("SELECT count(*) as cnt FROM #{FC::ItemStorage.table_name} WHERE storage_name='#{Mysql2::Client.escape(storage.name)}'").first['cnt']
     puts %Q{Storage
-  Name:           #{storage.name}
-  Host:           #{storage.host} 
-  DC:             #{storage.dc}
-  Path:           #{storage.path} 
-  Url:            #{storage.url}
-  Url weight:     #{storage.url_weight}
-  Write weight    #{storage.write_weight}
-  Size:           #{size_to_human storage.size} (#{(storage.size_rate*100).to_i}%)
-  Free:           #{size_to_human storage.free} (#{(storage.free_rate*100).to_i}%) 
-  Size limit:     #{size_to_human storage.size_limit}
-  Size type:      #{storage.auto_size? ? "Auto (min #{ size_to_human storage.auto_size })" : 'Static'}
-  Copy storages:  #{storage.copy_storages}
-  Check time:     #{storage.check_time ? "#{Time.at(storage.check_time)} (#{storage.check_time_delay} seconds ago)" : ''}
-  Status:         #{storage.up? ? colorize_string('UP', :green) : colorize_string('DOWN', :red)}
-  Items storages: #{count}}
+  Name:            #{storage.name}
+  Host:            #{storage.host}
+  DC:              #{storage.dc}
+  Path:            #{storage.path}
+  Url:             #{storage.url}
+  Url weight:      #{storage.url_weight}
+  Write weight     #{storage.write_weight}
+  Size:            #{size_to_human storage.size} (#{(storage.size_rate*100).to_i}%)
+  Free:            #{size_to_human storage.free} (#{(storage.free_rate*100).to_i}%)
+  Size limit:      #{size_to_human storage.size_limit}
+  Size type:       #{storage.auto_size? ? "Auto (min #{ size_to_human storage.auto_size })" : 'Static'}
+  Copy storages:   #{storage.copy_storages}
+  Check time:      #{storage.check_time ? "#{Time.at(storage.check_time)} (#{storage.check_time_delay} seconds ago)" : ''}
+  Check http time: #{storage.http_check_enabled? ? "#{Time.at(storage.http_check_time)} (#{storage.http_check_time_delay} seconds ago)" : 'disabled'}
+  Status:          #{storage.up? ? colorize_string('UP', :green) : colorize_string('DOWN', :red)}
+  Items storages:  #{count}}
   end
 end
 
@@ -56,13 +57,14 @@ def storages_add
     size_limit = human_to_size stdin_read_val('Size limit') {|val| "Size limit not is valid size." unless human_to_size(val)}
   end
 
+  check_http = %(y yes).include?(stdin_read_val('Check http (y/n)?').downcase) ? 0 : -1
   copy_storages = stdin_read_val('Copy storages', true)
   storages = FC::Storage.where.map(&:name)
   copy_storages = copy_storages.split(',').select{|s| storages.member?(s.strip)}.join(',').strip
   begin
     path = path +'/' unless path[-1] == '/'
     path = '/' + path unless path[0] == '/'
-    storage = FC::Storage.new(:name => name, :dc => dc, :host => host, :path => path, :url => url, :size_limit => size_limit, :copy_storages => copy_storages, :url_weight => url_weight, :write_weight => write_weight, :auto_size => auto_size)
+    storage = FC::Storage.new(:name => name, :dc => dc, :host => host, :path => path, :url => url, :size_limit => size_limit, :copy_storages => copy_storages, :url_weight => url_weight, :write_weight => write_weight, :auto_size => auto_size, :http_check_time => check_http)
     print 'Calc current size.. '
     size = storage.file_size('', true)
     puts "ok"
@@ -88,6 +90,7 @@ def storages_add
   Free:         #{size_to_human free} (#{(free.to_f*100 / size_limit).to_i}%)
   Size type:    #{storage.auto_size? ? "Auto (min #{ size_to_human(auto_size) })" : 'Static' }
   Size limit:   #{size_to_human size_limit}
+  Check http:   #{storage.http_check_enabled? ? 'yes' : 'no' }
   Copy storages #{copy_storages}}
   s = Readline.readline("Continue? (y/n) ", false).strip.downcase
   puts ""
@@ -152,6 +155,7 @@ def storages_change
       auto_size = 0
       size_limit = stdin_read_val("Size (now #{size_to_human(storage.size_limit)})", true) {|val| "Size limit not is valid size." if !val.empty? && !human_to_size(val)}
     end
+    check_http = %(y yes).include?(stdin_read_val("Check http (now #{storage.http_check_enabled? ? 'yes' : 'no'})", true, storage.http_check_enabled? ? 'yes' : 'no').downcase)
     copy_storages = stdin_read_val("Copy storages (now #{storage.copy_storages})", true)
     
     storage.dc = dc unless dc.empty?
@@ -172,7 +176,7 @@ def storages_change
     storage.size_limit = human_to_size(size_limit) unless size_limit.empty?
     storages = FC::Storage.where.map(&:name)
     storage.copy_storages = copy_storages.split(',').select{|s| storages.member?(s.strip)}.join(',').strip unless copy_storages.empty?
-    
+    storage.http_check_time = (check_http ? 0 : -1) if storage.http_check_enabled? != check_http
     puts %Q{\nStorage
     Name:          #{storage.name}
     DC:            #{storage.dc}
@@ -185,6 +189,7 @@ def storages_change
     Free:          #{size_to_human storage.free} (#{(storage.free_rate*100).to_i}%)
     Size type:     #{storage.auto_size? ? "Auto (Min #{size_to_human auto_size})" : 'Static' }
     Size limit:    #{size_to_human storage.size_limit }
+    Check http:    #{storage.http_check_enabled? ? 'yes' : 'no' }
     Copy storages: #{storage.copy_storages}}
     s = Readline.readline("Continue? (y/n) ", false).strip.downcase
     puts ""
