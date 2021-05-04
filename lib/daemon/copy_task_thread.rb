@@ -48,6 +48,7 @@ class CopyTaskThread < BaseThread
     rescue Exception => e
       if e.message.match('Record not found')
         $log.warn("Item ##{task.item_id} not found before copy")
+        task.delete
         return nil
       else 
         raise e
