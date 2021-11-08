@@ -13,6 +13,7 @@ module FC
     #   :additional_fields - hash of additional FC:Item fields 
     #   :no_md5 - don't use md5
     #   :speed_limit - limit copy speed
+    #   :force_local_storage_name
     # If item_name is part of local_path it processed as inplace - local_path is valid path to the item for policy
     def self.create_from_local(local_path, item_name, policy, options={}, &block)
       raise 'Path not exists' unless File.exists?(local_path)
@@ -32,14 +33,25 @@ module FC
       item_params.delete(:not_local)
       item_params.delete(:no_md5)
       item_params.delete(:speed_limit)
+      item_params.delete(:force_local_storage_name)
       raise 'Name is empty' if item_params[:name].empty?
       raise 'Zero size path' if item_params[:size] == 0
 
       if local_path.include?(item_name) && !options[:not_local]
-        storage = policy.get_create_storages.detect do |s|
-          s.host == FC::Storage.curr_host && local_path.index(s.path) == 0 && local_path.sub(s.path, '').sub(/\/$/, '').sub(/^\//, '') == item_params[:name]
+        if options[:force_local_storage_name]
+          storage = policy.get_create_storages.detect do |s|
+            s.name == options[:force_local_storage_name]
+          end
+          FC::Error.raise "force_local_storage #{storage.name} is not valid path for policy ##{policy.id}" unless storage
+          if local_path.index(storage.path) != 0 || local_path.sub(storage.path, '').sub(/\/$/, '').sub(/^\//, '') != item_params[:name]
+            FC::Error.raise "force_local_storage #{storage.name} is not valid path for local path ##{local_path}"
+          end
+        else
+          storage = policy.get_create_storages.detect do |s|
+            s.host == FC::Storage.curr_host && local_path.index(s.path) == 0 && local_path.sub(s.path, '').sub(/\/$/, '').sub(/^\//, '') == item_params[:name]
+          end
+          FC::Error.raise "local_path #{local_path} is not valid path for policy ##{policy.id}" unless storage
         end
-        FC::Error.raise "local_path #{local_path} is not valid path for policy ##{policy.id}" unless storage
       end
 
       # new item?
