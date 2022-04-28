@@ -42,7 +42,7 @@ module FC
           storage = policy.get_create_storages.detect do |s|
             s.name == options[:force_local_storage_name]
           end
-          FC::Error.raise "force_local_storage #{storage.name} is not valid path for policy ##{policy.id}" unless storage
+          FC::Error.raise "force_local_storage #{options[:force_local_storage_name]} is not valid path for policy ##{policy.id}" unless storage
           if local_path.index(storage.path) != 0 || local_path.sub(storage.path, '').sub(/\/$/, '').sub(/^\//, '') != item_params[:name]
             FC::Error.raise "force_local_storage #{storage.name} is not valid path for local path ##{local_path}"
           end
